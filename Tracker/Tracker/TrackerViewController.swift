@@ -3,8 +3,6 @@ import UIKit
 class TrackerViewController: UIViewController {
     
     private let textLabel = UILabel()
-    private let dateLabel = UILabel()
-    private let dateView = UIView()
     private var imageView = UIImageView()
     private var searchField: UISearchController!
     
@@ -14,12 +12,12 @@ class TrackerViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
-        setupDateLabel()
         setupTrackerButton()
         setupTitle()
         setupSearchField()
         setupImageView()
         setupTextLabel()
+        setupDatePicker()
         setupConstraints()
     }
     
@@ -28,6 +26,22 @@ class TrackerViewController: UIViewController {
     private func setupView() {
         view.backgroundColor = UIColor(resource: .white)
         view.contentMode = .scaleToFill
+    }
+    
+    private func setupDatePicker() {
+        let datePicker = UIDatePicker()
+        datePicker.datePickerMode = .date
+        datePicker.preferredDatePickerStyle = .compact
+        datePicker.addTarget(self, action: #selector(datePickerValueChanged(_:)), for: .valueChanged)
+        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: datePicker)
+    }
+    
+    @objc func datePickerValueChanged(_ sender: UIDatePicker) {
+        let selectedDate = sender.date
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd.MM.yy"
+        let formattedDate = dateFormatter.string(from: selectedDate)
+        print("Выбранная дата: \(formattedDate)")
     }
     
     private func setupImageView(){
@@ -46,28 +60,6 @@ class TrackerViewController: UIViewController {
         textLabel.contentMode = .center
         textLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(textLabel)
-    }
-    
-    private func setupDateLabel(){
-        dateLabel.backgroundColor = UIColor(resource: .lightgray)
-        dateLabel.layer.cornerRadius = 8
-        dateLabel.clipsToBounds = true
-        updateDate()
-        dateLabel.textColor = UIColor(resource: .black)
-        dateLabel.font = UIFont.systemFont(ofSize: 17, weight: .regular)
-        dateLabel.textAlignment = .center
-        dateLabel.adjustsFontSizeToFitWidth = true
-        dateLabel.translatesAutoresizingMaskIntoConstraints = false
-        dateView.translatesAutoresizingMaskIntoConstraints = false
-        dateView.addSubview(dateLabel)
-        let dateBarItem = UIBarButtonItem(customView: dateView)
-        navigationItem.rightBarButtonItem = dateBarItem
-    }
-    
-    func updateDate() {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd.MM.yy"
-        dateLabel.text = dateFormatter.string(from: Date())
     }
     
     private func setupTrackerButton(){
@@ -95,12 +87,6 @@ class TrackerViewController: UIViewController {
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            dateView.widthAnchor.constraint(equalToConstant: 77),
-            dateView.heightAnchor.constraint(equalToConstant: 34),
-            dateLabel.topAnchor.constraint(equalTo: dateView.topAnchor, constant: 6),
-            dateLabel.bottomAnchor.constraint(equalTo: dateView.bottomAnchor, constant: 6),
-            dateLabel.leadingAnchor.constraint(equalTo: dateView.leadingAnchor, constant: 12),
-            dateLabel.trailingAnchor.constraint(equalTo: dateView.trailingAnchor, constant: -12),
             imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             imageView.widthAnchor.constraint(equalToConstant: 80),
             imageView.heightAnchor.constraint(equalToConstant: 80),
