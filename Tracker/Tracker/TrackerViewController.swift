@@ -261,7 +261,6 @@ extension TrackerViewController: UICollectionViewDataSource {
         return cell
     }
 }
-import UIKit
 
 extension TrackerViewController: UICollectionViewDelegateFlowLayout {
 

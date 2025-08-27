@@ -1,4 +1,3 @@
-protocol CategoryScheduleCellDelegate: AnyObject {
+protocol CategoryCellDelegate: AnyObject {
     func didTapCategoryButton()
-    func didTapScheduleButton()
 }

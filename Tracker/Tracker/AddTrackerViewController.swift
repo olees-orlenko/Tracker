@@ -1,8 +1,6 @@
 import UIKit
 
-final class AddTrackerViewController: UIViewController, UITextFieldDelegate, CategoryViewControllerDelegate, ScheduleViewControllerDelegate {
-    //    func didchooseCategory(_ category: String) {
-    //    }
+final class AddTrackerViewController: UIViewController, UITextFieldDelegate, ScheduleViewControllerDelegate {
     
     weak var delegate: AddTrackerViewControllerDelegate?
     private let cellIdentifier = "cell"
@@ -17,11 +15,12 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Cat
     
     // MARK: - Properties
     
-    var categories: [TrackerCategory] = []
+    //    var categories: [TrackerCategory] = []
     let sections = ["Категория", "Расписание"]
-    private let schedule: [Week] = Week.allCases
-    private var selectedSchedule: [Week] = []
-    var selectedSchedules: [Int : Bool] = [:]
+    var categories: [String] = ["Важное", "Неважное"]
+    //    var selectedCategory: TrackerCategory?
+    private var selectedDays: [Week] = []
+    var selectedCategory: String?
     
     // MARK: - Lifecycle
     
@@ -58,12 +57,6 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Cat
     private func setupTitle(){
         navigationController?.navigationBar.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 16, weight: .medium)]
         navigationItem.title = "Новая привычка"
-        //        let titleLabel = UILabel()
-        //            titleLabel.text = navigationItem.title
-        //            titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        //            titleLabel.textColor = UIColor.black
-        //            titleLabel.sizeToFit()
-        //            navigationItem.titleView = titleLabel
     }
     
     private func setupNameTrackerTextField() {
@@ -85,7 +78,6 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Cat
     }
     
     private func setupTableView() {
-        tableView.backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
         tableView.layer.cornerRadius = 16
         tableView.layer.masksToBounds = true
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -142,7 +134,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Cat
             tableView.topAnchor.constraint(equalTo: nameTrackerTextField.bottomAnchor, constant: 24),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            tableView.heightAnchor.constraint(equalToConstant: 150),
+            tableView.heightAnchor.constraint(equalToConstant: 150)
         ])
     }
     
@@ -153,22 +145,36 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Cat
         delegate?.removeTrackerRecord()
     }
     
+    //    @objc private func saveButtonTapped() {
+    //        guard let name = nameTrackerTextField.text, !name.isEmpty else {
+    //            return
+    //        }
+    //        textErrorLabel.isHidden = true
+    //        let newTracker = Tracker(id: UUID(), name: name, color: .red, emoji: "🙂", schedule: selectedDays)
+    //        guard let selectedIndexPath = tableView.indexPathForSelectedRow else {
+    //            return
+    //        }
+    //        let categoryTitle = categories[selectedIndexPath.row].title
+    //        delegate?.addNewTracker(tracker: newTracker, title: categoryTitle)
+    //        dismiss(animated: true, completion: nil)
+    //    }
     @objc private func saveButtonTapped() {
         guard let name = nameTrackerTextField.text, !name.isEmpty else {
             return
         }
         textErrorLabel.isHidden = true
-        let newTracker = Tracker(id: UUID(), name: name, color: .red, emoji: "🙂", schedule: selectedSchedule)
-        guard let selectedIndexPath = tableView.indexPathForSelectedRow else {
+        let newTracker = Tracker(id: UUID(), name: name, color: .red, emoji: "🙂", schedule: selectedDays)
+        guard let selectedCategory = selectedCategory else {
             return
         }
-        let categoryTitle = categories[selectedIndexPath.row].title
-        delegate?.addNewTracker(tracker: newTracker, title: categoryTitle)
+        
+        delegate?.addNewTracker(tracker: newTracker, title: selectedCategory)
         dismiss(animated: true, completion: nil)
     }
     
-    @objc private func scheduleButtonTapped() {
-        print("Расписание выбрано")
+    func didUpdateSchedule(selectedDays: [Week]) {
+        self.selectedDays = selectedDays
+        tableView.reloadData()
     }
     
     // MARK: - UITextFieldDelegate
@@ -186,11 +192,11 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Cat
     }
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-            if textField == nameTrackerTextField {
-                textField.resignFirstResponder()
-            }
-            return true
+        if textField == nameTrackerTextField {
+            textField.resignFirstResponder()
         }
+        return true
+    }
 }
 
 // MARK: - UITableViewDataSource
@@ -199,12 +205,29 @@ extension AddTrackerViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return 2
     }
-    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as? CategoryScheduleTableViewCell else {
             return UITableViewCell()
         }
-        cell.titleLabel.text = sections[indexPath.row]
+        let title = sections[indexPath.row]
+        var subtitle: String? = nil
+        if indexPath.row == 0 {
+            subtitle = selectedCategory
+        } else if indexPath.row == 1 && !selectedDays.isEmpty {
+            let dayAbbreviations = selectedDays.map { day in
+                switch day {
+                case .monday: return "Пн"
+                case .tuesday: return "Вт"
+                case .wednesday: return "Ср"
+                case .thursday: return "Чт"
+                case .friday: return "Пт"
+                case .saturday: return "Сб"
+                case .sunday: return "Вс"
+                }
+            }
+            subtitle = dayAbbreviations.joined(separator: ", ")
+        }
+        cell.configure(title: title, subtitle: subtitle)
         cell.accessoryType = .disclosureIndicator
         cell.contentView.backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
         let backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
@@ -214,6 +237,41 @@ extension AddTrackerViewController: UITableViewDataSource {
         cell.titleLabel.textColor = UIColor.black
         return cell
     }
+//    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+//        guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as? CategoryScheduleTableViewCell else {
+//            return UITableViewCell()
+//        }
+//        let title = sections[indexPath.row]
+//        var selectedDaysText: String? = nil
+//        var selectedCategoryText: String? = nil
+//        if indexPath.row == 0 {
+//            selectedCategoryText = selectedCategory
+//        }
+//        cell.configureCategory(title: title, selectedCategoryText: selectedCategoryText)
+//        if indexPath.row == 1 && !selectedDays.isEmpty {
+//            let dayAbbreviations = selectedDays.map { day in
+//                switch day {
+//                case .monday: return "Пн"
+//                case .tuesday: return "Вт"
+//                case .wednesday: return "Ср"
+//                case .thursday: return "Чт"
+//                case .friday: return "Пт"
+//                case .saturday: return "Сб"
+//                case .sunday: return "Вс"
+//                }
+//            }
+//            selectedDaysText = dayAbbreviations.joined(separator: ", ")
+//        }
+//        cell.configure(title: title, selectedDaysText: selectedDaysText)
+//        cell.accessoryType = .disclosureIndicator
+//        cell.contentView.backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
+//        let backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
+//        cell.backgroundColor = backgroundColor
+//        cell.contentView.backgroundColor = .clear
+//        cell.titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+//        cell.titleLabel.textColor = UIColor.black
+//        return cell
+//    }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 75
@@ -223,18 +281,27 @@ extension AddTrackerViewController: UITableViewDataSource {
 // MARK: - UITableViewDelegate
 
 extension AddTrackerViewController: UITableViewDelegate {
-    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         if indexPath.row == 0 {
             let categoryViewController = CategoryViewController()
+            categoryViewController.categories = categories
             categoryViewController.delegate = self
+            categoryViewController.selectedCategory = selectedCategory
             navigationController?.pushViewController(categoryViewController, animated: true)
         } else if indexPath.row == 1 {
             let scheduleViewController = ScheduleViewController()
             scheduleViewController.delegate = self
-            scheduleViewController.switchButton = selectedSchedules
-            navigationController?.pushViewController(scheduleViewController, animated: true)
+            scheduleViewController.selectedDays = selectedDays
+            let navigationController = UINavigationController(rootViewController: scheduleViewController)
+            present(navigationController, animated: true, completion: nil)
         }
+    }
+}
+
+extension AddTrackerViewController: CategoryViewControllerDelegate {
+    func didUpdateCategory(_ categoryTitle: String) {
+        self.selectedCategory = categoryTitle
+        tableView.reloadData()
     }
 }
