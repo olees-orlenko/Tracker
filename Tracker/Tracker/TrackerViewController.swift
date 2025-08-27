@@ -1,17 +1,48 @@
 import UIKit
 
-class TrackerViewController: UIViewController {
+class TrackerViewController: UIViewController, AddTrackerViewControllerDelegate, TrackerCellDelegate {
+    
+    // MARK: - UI Elements
     
     private let textLabel = UILabel()
+    private let cellIdentifier = "cell"
     private var imageView = UIImageView()
     private var searchField: UISearchController!
+    private var collectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        return collectionView
+    }()
     
+    // MARK: - Properties
+    
+    var currentDate = Date()
+    var trackers: [Tracker] = []
     var categories: [TrackerCategory] = []
-    var completedTrackers: [TrackerRecord] = []
+    
+    // MARK: - Private Properties
+    
+    private var completedTrackers: [TrackerRecord] = []
+    private var visibleCategories: [TrackerCategory] = []
+    
+    // MARK: - Initializers
+    
+    init() {
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        collectionView.dataSource = self
+        collectionView.delegate = self
         setupView()
+        setupCollectionView()
         setupTrackerButton()
         setupTitle()
         setupSearchField()
@@ -19,13 +50,37 @@ class TrackerViewController: UIViewController {
         setupTextLabel()
         setupDatePicker()
         setupConstraints()
+        // Mocks
+        categories = [
+            TrackerCategory(title: "Привычки", trackers: [
+                Tracker(id: UUID(), name: "Утренняя зарядка", color: .systemRed, emoji: "💪", schedule: [.thursday, .friday]),
+                Tracker(id: UUID(), name: "Почитать книгу", color: .systemBlue, emoji: "📚", schedule: [.monday, .wednesday, .friday])
+            ]),
+            TrackerCategory(title: "Задачи", trackers: [
+                Tracker(id: UUID(), name: "Выгулять собаку", color: .systemOrange, emoji: "🐶", schedule: [.monday]), // Добавим для примера .everyday
+                Tracker(id: UUID(), name: "Позвонить маме", color: .systemIndigo, emoji: "📞", schedule: [.sunday])
+            ])
+        ]
+        updateImageView()
+        collectionView.reloadData()
     }
     
-    // MARK: - View Setup
+    // MARK: - Setup UI Elements
     
     private func setupView() {
         view.backgroundColor = UIColor(resource: .white)
         view.contentMode = .scaleToFill
+    }
+    
+    private func setupCollectionView() {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .vertical
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        collectionView.delegate = self
+        collectionView.dataSource = self
+        collectionView.register(TrackerCollectionViewCell.self, forCellWithReuseIdentifier: "TrackerCollectionViewCell")
+        view.addSubview(collectionView)
     }
     
     private func setupDatePicker() {
@@ -34,14 +89,6 @@ class TrackerViewController: UIViewController {
         datePicker.preferredDatePickerStyle = .compact
         datePicker.addTarget(self, action: #selector(datePickerValueChanged(_:)), for: .valueChanged)
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: datePicker)
-    }
-    
-    @objc func datePickerValueChanged(_ sender: UIDatePicker) {
-        let selectedDate = sender.date
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd.MM.yy"
-        let formattedDate = dateFormatter.string(from: selectedDate)
-        print("Выбранная дата: \(formattedDate)")
     }
     
     private func setupImageView(){
@@ -83,7 +130,7 @@ class TrackerViewController: UIViewController {
         navigationItem.searchController = searchField
     }
     
-    @objc func addTrackerButtonTapped() {}
+    // MARK: - Constraints
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
@@ -94,10 +141,54 @@ class TrackerViewController: UIViewController {
             textLabel.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
             textLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
             textLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
     }
+    // MARK: - Actions
     
-    func addNewTracker(newTracker: Tracker, toCategoryTitle categoryTitle: String) {
+    @objc func addTrackerButtonTapped() {
+        let addTrackerViewController = AddTrackerViewController()
+        addTrackerViewController.delegate = self
+        let navigationController = UINavigationController(rootViewController: addTrackerViewController)
+        present(navigationController, animated: true)
+        print("Добавить трекер")
+    }
+    
+    @objc func datePickerValueChanged(_ sender: UIDatePicker) {
+        let selectedDate = sender.date
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd.MM.yy"
+        let formattedDate = dateFormatter.string(from: selectedDate)
+        print("Выбранная дата: \(formattedDate)")
+    }
+    
+    // MARK: - TrackerCellDelegate
+    
+    func didTapCompleteButton(trackerId: UUID, at indexPath: IndexPath) {
+        let tracker = categories[indexPath.section].trackers[indexPath.row]
+        if currentDate <= Date() {
+            addTrackerRecord(trackerId: trackerId, date: currentDate)
+            collectionView.reloadData()
+        }
+    }
+    
+    func didTapUnCompleteButton(trackerId: UUID, at indexPath: IndexPath) {
+        removeTrackerRecord()
+        collectionView.reloadData()
+    }
+    
+    // MARK: - Data
+    
+    private func updateImageView() {
+        let hasTrackers = categories.contains { !$0.trackers.isEmpty }
+        imageView.isHidden = hasTrackers
+        textLabel.isHidden = hasTrackers
+    }
+    
+    func addNewTracker(tracker newTracker: Tracker, title categoryTitle: String) {
         var updatedCategories: [TrackerCategory] = []
         var foundCategory = false
         for category in categories {
@@ -114,19 +205,88 @@ class TrackerViewController: UIViewController {
             let newCategory = TrackerCategory(title: categoryTitle, trackers: [newTracker])
             updatedCategories.append(newCategory)
         }
-        
         self.categories = updatedCategories
         print("Трекер '\(newTracker.name)' добавлен. Всего категорий: \(categories.count)")
+        print(updatedCategories)
+        updateImageView()
     }
     
     func addTrackerRecord(trackerId: UUID, date: Date) {
         let newRecord = TrackerRecord(trackerId: trackerId, date: date)
-        completedTrackers = completedTrackers + [newRecord]
+        completedTrackers.append(newRecord)
+        print("Tracker record added for \(trackerId) on \(date)")
+    }
+    func removeTrackerRecord() {
+        completedTrackers.removeAll()
+    }
+    //    func removeTrackerRecord(tracker record: TrackerRecord) {
+    //        completedTrackers.removeAll { $0.trackerId == record.trackerId && $0.date == record.date }
+    //    }
+    
+    func completeTracker(trackerId: UUID, date: Date) {
+        let existingRecord = completedTrackers.first { record in
+            record.trackerId == trackerId && Calendar.current.isDate(record.date, inSameDayAs: date)
+        }
+        if let existingRecord = existingRecord {
+            removeTrackerRecord() // (tracker: existingRecord)
+        } else {
+            addTrackerRecord(trackerId: trackerId, date: date)
+        }
+    }
+}
+
+// MARK: - CollectionView Delegate and DataSource
+
+extension TrackerViewController: UICollectionViewDataSource {
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return categories.count
     }
     
-    func removeTrackerRecord(trackerId: UUID, date: Date) {
-        completedTrackers = completedTrackers.filter { record in
-            !(record.trackerId == trackerId && Calendar.current.isDate(record.date, inSameDayAs: date))
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return categories[section].trackers.count
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TrackerCollectionViewCell.reuseIdentifier, for: indexPath) as! TrackerCollectionViewCell
+        let category = categories[indexPath.section]
+        let tracker = category.trackers[indexPath.row]
+        let completedDays = completedTrackers.filter { completedTracker in
+            return completedTracker.trackerId == tracker.id
+        }.count
+        let isCompleted = completedTrackers.contains { completedTracker in
+            return completedTracker.trackerId == tracker.id && completedTracker.date == currentDate
         }
+        cell.configure(isCompleted: isCompleted, trackerID: tracker.id, indexPath: indexPath, categoryTitle: category.title, completedDays: completedDays, currentDate: currentDate)
+        cell.delegate = self
+        return cell
+    }
+}
+import UIKit
+
+extension TrackerViewController: UICollectionViewDelegateFlowLayout {
+
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        let sectionInsets = self.collectionView(collectionView, layout: collectionViewLayout, insetForSectionAt: indexPath.section)
+        let itemSpacing = self.collectionView(collectionView, layout: collectionViewLayout, minimumInteritemSpacingForSectionAt: indexPath.section)
+        let numberOfColumns: CGFloat = 2
+        let totalPadding = sectionInsets.left + sectionInsets.right
+        let spacingBetweenCells = itemSpacing * (numberOfColumns - 1)
+        let availableWidth = collectionView.bounds.width - totalPadding - spacingBetweenCells
+        let cellWidth = availableWidth / numberOfColumns
+        let cellHeight: CGFloat = 178
+        return CGSize(width: floor(cellWidth), height: cellHeight)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
+        return 7
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
+        return 8
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
+                        insetForSectionAt section: Int) -> UIEdgeInsets {
+        return UIEdgeInsets(top: 24, left: 16, bottom: 0, right: 16)
     }
 }
