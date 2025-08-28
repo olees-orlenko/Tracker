@@ -12,11 +12,7 @@ final class CategoryViewController: UIViewController{
     // MARK: - Properties
     
     var categories: [String] = []
-//    var categories: [String] = ["Важное", "Работа", "Личное", "Покупки", "Учеба", "Спорт", "Развлечения", "Дом", "Здоровье", "Путешествия"]
     var selectedCategory: String?
-    //    var categories: [TrackerCategory] = []
-    //    var selectedCategory: [Week] = []
-    //    var onScheduleSelected: (([Week]) -> Void)?
     
     // MARK: - Lifecycle
     
@@ -84,13 +80,6 @@ final class CategoryViewController: UIViewController{
     
     // MARK: - Actions
     
-    //    @objc private func doneButtonTapped() {
-    //        if let selectedCategory = selectedCategory {
-    //            delegate?.didUpdateCategory(selectedCategory)
-    //        }
-    //        //        dismiss(animated: true, completion: nil)
-    //        navigationController?.popViewController(animated: true)
-    //    }
     @objc private func doneButtonTapped() {
         if let selectedCategory = selectedCategory {
             delegate?.didUpdateCategory(selectedCategory)
@@ -110,27 +99,12 @@ extension CategoryViewController: UITableViewDataSource {
         return categories.count
     }
     
-//        func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-//            let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as! CategoryScheduleTableViewCell
-//            let categoryTitle = categories[indexPath.row]
-//            cell.textLabel?.text = categoryTitle
-//            if categoryTitle == selectedCategory {
-//                cell.accessoryType = .checkmark
-//            } else {
-//                cell.accessoryType = .none
-//            }
-//            return cell
-//        }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as! CategoryScheduleTableViewCell
         let categoryTitle = categories[indexPath.row]
-
-        // Используйте titleLabel вашей кастомной ячейки
         cell.titleLabel.text = categoryTitle
-        // Убедитесь, что subtitleLabel скрыт или очищен
         cell.subtitleLabel.text = nil
-        cell.subtitleLabel.isHidden = true // Если у вас есть subtitleLabel
-
+        cell.subtitleLabel.isHidden = true
         if categoryTitle == selectedCategory {
             cell.accessoryType = .checkmark
         } else {
@@ -138,12 +112,13 @@ extension CategoryViewController: UITableViewDataSource {
         }
         return cell
     }
-
+    
 }
+
 // MARK: - UITableViewDelegate
 
 extension CategoryViewController: UITableViewDelegate {
-
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         selectedCategory = categories[indexPath.row]
@@ -151,16 +126,3 @@ extension CategoryViewController: UITableViewDelegate {
         tableView.reloadData()
     }
 }
-//        func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//            tableView.deselectRow(at: indexPath, animated: true)
-//            let selectedCategory = categories[indexPath.row]
-//            delegate?.didUpdateCategory(selectedCategory.title)
-//            navigationController?.popViewController(animated: true)
-//            tableView.deselectRow(at: indexPath, animated: true)
-//        }
-//
-//    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        tableView.deselectRow(at: indexPath, animated: true)
-//        selectedCategory = categories[indexPath.row]
-//        tableView.reloadData()
-//    }

@@ -2,5 +2,5 @@ import UIKit
 
 protocol AddTrackerViewControllerDelegate: AnyObject {
     func addNewTracker(tracker: Tracker, title: String)
-    func removeTrackerRecord()
+    func removeTrackerRecord(trackerId: UUID, date: Date)
 }

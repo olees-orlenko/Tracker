@@ -78,7 +78,7 @@ final class ScheduleViewController: UIViewController {
     }
     
     // MARK: - Actions
-
+    
     @objc private func doneButtonTapped() {
         onScheduleSelected?(selectedDays)
         delegate?.didUpdateSchedule(selectedDays: selectedDays)

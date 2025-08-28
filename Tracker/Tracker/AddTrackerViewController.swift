@@ -15,10 +15,10 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     
     // MARK: - Properties
     
-    //    var categories: [TrackerCategory] = []
     let sections = ["Категория", "Расписание"]
     var categories: [String] = ["Важное", "Неважное"]
-    //    var selectedCategory: TrackerCategory?
+    var trackerId: UUID!
+    var currentDate: Date?
     private var selectedDays: [Week] = []
     var selectedCategory: String?
     
@@ -142,22 +142,8 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     
     @objc private func cancelButtonTapped() {
         dismiss(animated: true)
-        delegate?.removeTrackerRecord()
     }
     
-    //    @objc private func saveButtonTapped() {
-    //        guard let name = nameTrackerTextField.text, !name.isEmpty else {
-    //            return
-    //        }
-    //        textErrorLabel.isHidden = true
-    //        let newTracker = Tracker(id: UUID(), name: name, color: .red, emoji: "🙂", schedule: selectedDays)
-    //        guard let selectedIndexPath = tableView.indexPathForSelectedRow else {
-    //            return
-    //        }
-    //        let categoryTitle = categories[selectedIndexPath.row].title
-    //        delegate?.addNewTracker(tracker: newTracker, title: categoryTitle)
-    //        dismiss(animated: true, completion: nil)
-    //    }
     @objc private func saveButtonTapped() {
         guard let name = nameTrackerTextField.text, !name.isEmpty else {
             return
@@ -167,7 +153,6 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
         guard let selectedCategory = selectedCategory else {
             return
         }
-        
         delegate?.addNewTracker(tracker: newTracker, title: selectedCategory)
         dismiss(animated: true, completion: nil)
     }
@@ -205,6 +190,7 @@ extension AddTrackerViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return 2
     }
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as? CategoryScheduleTableViewCell else {
             return UITableViewCell()
@@ -237,41 +223,6 @@ extension AddTrackerViewController: UITableViewDataSource {
         cell.titleLabel.textColor = UIColor.black
         return cell
     }
-//    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-//        guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as? CategoryScheduleTableViewCell else {
-//            return UITableViewCell()
-//        }
-//        let title = sections[indexPath.row]
-//        var selectedDaysText: String? = nil
-//        var selectedCategoryText: String? = nil
-//        if indexPath.row == 0 {
-//            selectedCategoryText = selectedCategory
-//        }
-//        cell.configureCategory(title: title, selectedCategoryText: selectedCategoryText)
-//        if indexPath.row == 1 && !selectedDays.isEmpty {
-//            let dayAbbreviations = selectedDays.map { day in
-//                switch day {
-//                case .monday: return "Пн"
-//                case .tuesday: return "Вт"
-//                case .wednesday: return "Ср"
-//                case .thursday: return "Чт"
-//                case .friday: return "Пт"
-//                case .saturday: return "Сб"
-//                case .sunday: return "Вс"
-//                }
-//            }
-//            selectedDaysText = dayAbbreviations.joined(separator: ", ")
-//        }
-//        cell.configure(title: title, selectedDaysText: selectedDaysText)
-//        cell.accessoryType = .disclosureIndicator
-//        cell.contentView.backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
-//        let backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
-//        cell.backgroundColor = backgroundColor
-//        cell.contentView.backgroundColor = .clear
-//        cell.titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
-//        cell.titleLabel.textColor = UIColor.black
-//        return cell
-//    }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 75

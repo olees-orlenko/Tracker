@@ -16,6 +16,7 @@ class TrackerCollectionViewCell: UICollectionViewCell {
     // MARK: - Private Properties
     
     private var trackerID: UUID?
+    private var trackerName: String?
     private var indexPath: IndexPath?
     private var categoryTitle: String?
     private var completedDays: Int = 0
@@ -89,7 +90,7 @@ class TrackerCollectionViewCell: UICollectionViewCell {
     
     private func setupAddButton() {
         addButton.setImage(UIImage(systemName: "plus"), for: .normal)
-        let checkmarkImage = UIImage(named: "Plus")
+        let checkmarkImage = UIImage(systemName: "checkmark")
         addButton.setImage(checkmarkImage, for: .selected)
         addButton.tintColor = UIColor(resource: .white)
         addButton.backgroundColor = UIColor(resource: .green)
@@ -138,7 +139,6 @@ class TrackerCollectionViewCell: UICollectionViewCell {
             return
         }
         if isFutureDate {
-            print("Cannot complete trackers in the future.")
             return
         }
         let newIsCompleted = !addButton.isSelected
@@ -156,8 +156,9 @@ class TrackerCollectionViewCell: UICollectionViewCell {
     
     // MARK: - Configuration
     
-    func configure(isCompleted: Bool, trackerID: UUID, indexPath: IndexPath, categoryTitle: String, completedDays: Int, currentDate: Date) {
+    func configure(isCompleted: Bool, trackerID: UUID, trackerName: String, indexPath: IndexPath, categoryTitle: String, completedDays: Int, currentDate: Date) {
         self.trackerID = trackerID
+        self.textLabel.text = trackerName
         self.indexPath = indexPath
         self.categoryTitle = categoryTitle
         self.completedDays = completedDays

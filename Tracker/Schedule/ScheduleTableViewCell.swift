@@ -22,10 +22,11 @@ class ScheduleTableViewCell: UITableViewCell {
     // MARK: - Setup UI Elements
     
     private func setupDaySwitch(){
+        daySwitch.onTintColor = UIColor(resource: .blue)
         daySwitch.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(daySwitch)
     }
-
+    
     // MARK: - Constraints
     
     private func setupConstraints() {
