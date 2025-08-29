@@ -1,6 +1,6 @@
 import UIKit
 
-class ScheduleTableViewCell: UITableViewCell {
+final class ScheduleTableViewCell: UITableViewCell {
     static let reuseIdentifier = "ScheduleTableViewCell"
     
     // MARK: - UI Elements

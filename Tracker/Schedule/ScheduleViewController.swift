@@ -95,7 +95,9 @@ extension ScheduleViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: ScheduleTableViewCell.reuseIdentifier, for: indexPath) as! ScheduleTableViewCell
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: ScheduleTableViewCell.reuseIdentifier, for: indexPath) as? ScheduleTableViewCell else {
+            return UITableViewCell()
+        }
         let day = Week.allCases[indexPath.row]
         cell.contentView.backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
         let backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)

@@ -1,6 +1,6 @@
 import UIKit
 
-class CategoryTableViewCell: UITableViewCell {
+final class CategoryTableViewCell: UITableViewCell {
     static let reuseIdentifier = "CategoryTableViewCell"
     
     // MARK: - UI Elements

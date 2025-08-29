@@ -100,16 +100,14 @@ extension CategoryViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as! CategoryScheduleTableViewCell
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as? CategoryScheduleTableViewCell else {
+            return UITableViewCell()
+        }
         let categoryTitle = categories[indexPath.row]
         cell.titleLabel.text = categoryTitle
         cell.subtitleLabel.text = nil
         cell.subtitleLabel.isHidden = true
-        if categoryTitle == selectedCategory {
-            cell.accessoryType = .checkmark
-        } else {
-            cell.accessoryType = .none
-        }
+        cell.accessoryType = categoryTitle == selectedCategory ? .checkmark : .none
         return cell
     }
     

@@ -1,6 +1,6 @@
 import UIKit
 
-class CategoryScheduleTableViewCell: UITableViewCell {
+final class CategoryScheduleTableViewCell: UITableViewCell {
     weak var delegate: CategoryCellDelegate?
     static let reuseIdentifier = "CategoryScheduleTableViewCell"
     

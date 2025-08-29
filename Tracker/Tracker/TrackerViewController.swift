@@ -1,6 +1,6 @@
 import UIKit
 
-class TrackerViewController: UIViewController, AddTrackerViewControllerDelegate, TrackerCellDelegate {
+final class TrackerViewController: UIViewController, AddTrackerViewControllerDelegate, TrackerCellDelegate {
     
     // MARK: - UI Elements
     
@@ -112,7 +112,6 @@ class TrackerViewController: UIViewController, AddTrackerViewControllerDelegate,
         let trackerButtonImage = UIImage(named: "add_tracker")
         let addTrackerButton = UIBarButtonItem(image: trackerButtonImage, style: .plain, target: self, action: #selector(addTrackerButtonTapped))
         addTrackerButton.tintColor = .black
-        let leadingSpace = UIBarButtonItem(barButtonSystemItem: .fixedSpace, target: nil, action: nil)
         navigationItem.leftBarButtonItem = addTrackerButton
     }
     
@@ -149,7 +148,7 @@ class TrackerViewController: UIViewController, AddTrackerViewControllerDelegate,
     
     // MARK: - Actions
     
-    @objc func addTrackerButtonTapped() {
+    @objc private func addTrackerButtonTapped() {
         let addTrackerViewController = AddTrackerViewController()
         addTrackerViewController.delegate = self
         let navigationController = UINavigationController(rootViewController: addTrackerViewController)
@@ -158,7 +157,7 @@ class TrackerViewController: UIViewController, AddTrackerViewControllerDelegate,
         collectionView.reloadData()
     }
     
-    @objc func datePickerValueChanged(_ sender: UIDatePicker) {
+    @objc private func datePickerValueChanged(_ sender: UIDatePicker) {
         let selectedDate = sender.date
         self.currentDate = selectedDate
         let dateFormatter = DateFormatter()
@@ -171,7 +170,6 @@ class TrackerViewController: UIViewController, AddTrackerViewControllerDelegate,
     // MARK: - TrackerCellDelegate
     
     func didTapCompleteButton(trackerId: UUID, at indexPath: IndexPath) {
-        let tracker = categories[indexPath.section].trackers[indexPath.row]
         if currentDate <= Date() {
             addTrackerRecord(trackerId: trackerId, date: currentDate)
             collectionView.reloadData()
@@ -229,7 +227,7 @@ class TrackerViewController: UIViewController, AddTrackerViewControllerDelegate,
         let existingRecord = completedTrackers.first { record in
             record.trackerId == trackerId && Calendar.current.isDate(record.date, inSameDayAs: date)
         }
-        if let existingRecord = existingRecord {
+        if existingRecord != nil {
             removeTrackerRecord(trackerId: trackerId, date: date)
         } else {
             addTrackerRecord(trackerId: trackerId, date: date)
@@ -274,7 +272,9 @@ extension TrackerViewController: UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TrackerCollectionViewCell.reuseIdentifier, for: indexPath) as! TrackerCollectionViewCell
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TrackerCollectionViewCell.reuseIdentifier, for: indexPath) as? TrackerCollectionViewCell else {
+            return UICollectionViewCell()
+        }
         let category = visibleCategories[indexPath.section]
         let tracker = category.trackers[indexPath.row]
         let completedDays = completedTrackers.filter { completedTracker in

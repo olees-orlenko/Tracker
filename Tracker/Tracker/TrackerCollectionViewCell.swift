@@ -1,6 +1,6 @@
 import UIKit
 
-class TrackerCollectionViewCell: UICollectionViewCell {
+final class TrackerCollectionViewCell: UICollectionViewCell {
     weak var delegate: TrackerCellDelegate?
     static let reuseIdentifier = "TrackerCollectionViewCell"
     
