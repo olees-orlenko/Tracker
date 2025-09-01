@@ -283,7 +283,7 @@ extension TrackerViewController: UICollectionViewDataSource {
         let isCompleted = completedTrackers.contains { completedTracker in
             return completedTracker.trackerId == tracker.id && completedTracker.date == currentDate
         }
-        cell.configure(isCompleted: isCompleted, trackerID: tracker.id, trackerName: tracker.name, indexPath: indexPath, categoryTitle: category.title, completedDays: completedDays, currentDate: currentDate)
+        cell.configure(isCompleted: isCompleted, trackerID: tracker.id, trackerName: tracker.name, indexPath: indexPath, categoryTitle: category.title, completedDays: completedDays, currentDate: currentDate, color: tracker.color, emoji: tracker.emoji)
         cell.delegate = self
         return cell
     }

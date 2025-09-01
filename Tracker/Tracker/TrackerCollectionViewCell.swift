@@ -22,6 +22,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     private var completedDays: Int = 0
     private var currentDate: Date = Date()
     private var isFutureDate: Bool = false
+    private var color: UIColor?
     
     // MARK: - Initializers
     
@@ -135,7 +136,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     // MARK: - Actions
     
     @objc func addButtonTapped() {
-        guard let trackerID = trackerID, let indexPath = indexPath else {
+        guard let trackerID = trackerID, let indexPath = indexPath, let color = self.color else {
             return
         }
         if isFutureDate {
@@ -150,22 +151,26 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
             delegate?.didTapUnCompleteButton(trackerId: trackerID, at: indexPath)
         }
         updateCounterLabelText(completedDays: completedDays)
-        updateAddButtonView(isCompleted: newIsCompleted)
+        updateAddButtonView(isCompleted: newIsCompleted, color: color)
         addButton.isSelected = newIsCompleted
     }
     
     // MARK: - Configuration
     
-    func configure(isCompleted: Bool, trackerID: UUID, trackerName: String, indexPath: IndexPath, categoryTitle: String, completedDays: Int, currentDate: Date) {
+    func configure(isCompleted: Bool, trackerID: UUID, trackerName: String, indexPath: IndexPath, categoryTitle: String, completedDays: Int, currentDate: Date, color: UIColor, emoji: String) {
         self.trackerID = trackerID
         self.textLabel.text = trackerName
         self.indexPath = indexPath
         self.categoryTitle = categoryTitle
         self.completedDays = completedDays
         self.currentDate = currentDate
+        self.emojiLabel.text = emoji
+        self.cardView.backgroundColor = color
+        self.addButton.backgroundColor = color
+        self.color = color
         isFutureDate = currentDate > Date()
         updateCounterLabelText(completedDays: completedDays)
-        updateAddButtonView(isCompleted: isCompleted)
+        updateAddButtonView(isCompleted: isCompleted, color: color)
         addButton.isSelected = isCompleted
         titleLabel.isHidden = indexPath.row != 0
         titleLabel.text = categoryTitle
@@ -179,17 +184,17 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     
     // MARK: - Update UI
     
-    private func updateAddButtonView(isCompleted: Bool) {
+    private func updateAddButtonView(isCompleted: Bool, color: UIColor) {
         addButton.isSelected = isCompleted
         let image = isCompleted ? UIImage(named: "Plus") : UIImage(systemName: "plus")
         addButton.setImage(image, for: .normal)
         if isFutureDate {
             addButton.backgroundColor = UIColor.gray
         } else {
-            addButton.backgroundColor = isCompleted ? UIColor(resource: .green).withAlphaComponent(0.3) : UIColor(resource: .green)
+            addButton.backgroundColor = isCompleted ? color.withAlphaComponent(0.3) : color
         }
     }
-    
+
     private func setCategoryTitle(_ title: String) {
         if self.categoryTitle == nil {
             self.categoryTitle = title
