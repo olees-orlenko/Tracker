@@ -18,6 +18,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     var currentDate = Date()
     var categories: [TrackerCategory] = []
+    var trackers: [Tracker] = []
     
     // MARK: - Private Properties
     
@@ -28,12 +29,15 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             updateImageView()
         }
     }
-    var filteredTrackers: [Tracker] = [] {
+    private var filteredTrackers: [Tracker] = [] {
         didSet {
             updateImageView()
             collectionView.reloadData()
         }
     }
+    private let trackerStore = TrackerStore()
+    private let trackerCategoryStore = TrackerCategoryStore()
+    private let trackerRecordStore = TrackerRecordStore()
     
     // MARK: - Initializers
     
@@ -62,6 +66,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         setupConstraints()
         updateImageView()
         collectionView.reloadData()
+        filterTrackersForSelectedDate(currentDate)
     }
     
     // MARK: - Setup UI Elements
@@ -153,8 +158,6 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         addTrackerViewController.delegate = self
         let navigationController = UINavigationController(rootViewController: addTrackerViewController)
         present(navigationController, animated: true)
-        filterTrackersForSelectedDate(currentDate)
-        collectionView.reloadData()
     }
     
     @objc private func datePickerValueChanged(_ sender: UIDatePicker) {
@@ -189,45 +192,45 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     }
     
     func addNewTracker(tracker newTracker: Tracker, title categoryTitle: String) {
-        var updatedCategories: [TrackerCategory] = []
-        var foundCategory = false
-        for category in categories {
-            if category.title == categoryTitle {
-                let updatedTrackers = category.trackers + [newTracker]
-                let updatedCategory = TrackerCategory(title: category.title, trackers: updatedTrackers)
-                updatedCategories.append(updatedCategory)
-                foundCategory = true
+        let category: TrackerCategoryCoreData
+        do {
+            if let existingCategory = try trackerCategoryStore.fetchCategory(withTitle: categoryTitle) {
+                category = existingCategory
             } else {
-                updatedCategories.append(category)
+                category = try trackerCategoryStore.createCategory(title: categoryTitle)
             }
+        } catch {
+            print("Ошибка при получении или создании категории: \(error)")
+            return
         }
-        if !foundCategory {
-            let newCategory = TrackerCategory(title: categoryTitle, trackers: [newTracker])
-            updatedCategories.append(newCategory)
+        do {
+            try trackerStore.createTracker(newTracker, category: category)
+        } catch {
+            print("Ошибка при создании трекера: \(error)")
+            return
         }
-        self.categories = updatedCategories
-        print("Трекер '\(newTracker.name)' добавлен. Всего категорий: \(categories.count)")
-        print(updatedCategories)
         updateImageView()
         collectionView.reloadData()
     }
     
     func addTrackerRecord(trackerId: UUID, date: Date) {
-        let newRecord = TrackerRecord(trackerId: trackerId, date: date)
-        completedTrackers.append(newRecord)
+        do {
+            try trackerRecordStore.createRecord(trackerId: trackerId, date: date)
+        } catch {
+            print("Ошибка при создании записи трекера по Id \(trackerId) на дату \(date): \(error)")
+        }
     }
     
     func removeTrackerRecord(trackerId: UUID, date: Date) {
-        completedTrackers.removeAll { record in
-            record.trackerId == trackerId && Calendar.current.isDate(record.date, inSameDayAs: date)
+        do {
+            try trackerRecordStore.deleteRecord(trackerId: trackerId, date: date)
+        } catch {
+            print("Ошибка при удалении записи трекера по Id \(trackerId) на дату \(date): \(error)")
         }
     }
     
     func completeTracker(trackerId: UUID, date: Date) {
-        let existingRecord = completedTrackers.first { record in
-            record.trackerId == trackerId && Calendar.current.isDate(record.date, inSameDayAs: date)
-        }
-        if existingRecord != nil {
+        if trackerRecordStore.isTrackerCompleted(trackerId: trackerId, onDate: date) {
             removeTrackerRecord(trackerId: trackerId, date: date)
         } else {
             addTrackerRecord(trackerId: trackerId, date: date)
@@ -238,25 +241,42 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         let calendar = Calendar.current
         let dayOfWeek = calendar.component(.weekday, from: date)
         guard let selectedWeekDay = Week(calendarWeekday: dayOfWeek) else {
-            self.filteredTrackers = []
             self.visibleCategories = []
             return
         }
+        let fetchRequest = trackerStore.fetchedResultsController.fetchRequest
+        fetchRequest.predicate = NSPredicate(format: "schedule & %d != 0", 1 << selectedWeekDay.bitValue)
+        do {
+            try trackerStore.fetchedResultsController.performFetch()
+            updateVisibleCategories()
+        } catch {
+            print("Ошибка получения трекера по предикату: \(error)")
+        }
+    }
+    
+    private func updateVisibleCategories() {
         var newVisibleCategories: [TrackerCategory] = []
         var newFilteredTrackers: [Tracker] = []
-        for category in categories {
-            let filteredTrackersInCategory = category.trackers.filter { tracker in
-                return tracker.schedule.contains(selectedWeekDay)
+        guard let fetchedObjects = trackerStore.fetchedResultsController.fetchedObjects else {
+            self.visibleCategories = []
+            self.filteredTrackers = []
+            return
+        }
+        let groupedByCategories = Dictionary(grouping: fetchedObjects) { (trackerCoreData) -> String in
+            return trackerCoreData.category?.title ?? "Без категории"
+        }
+        for (categoryTitle, trackerCoreDataArray) in groupedByCategories.sorted(by: { $0.key < $1.key }) {
+            let trackersForCategory: [Tracker] = trackerCoreDataArray.compactMap { trackerCoreData in
+                try? trackerStore.tracker(from: trackerCoreData)
             }
-            if !filteredTrackersInCategory.isEmpty {
-                let newCategory = TrackerCategory(title: category.title, trackers:
-                                                    filteredTrackersInCategory)
-                newVisibleCategories.append(newCategory)
-                newFilteredTrackers.append(contentsOf: filteredTrackersInCategory)
+            if !trackersForCategory.isEmpty {
+                let category = TrackerCategory(title: categoryTitle, trackers: trackersForCategory)
+                newVisibleCategories.append(category)
+                newFilteredTrackers.append(contentsOf: trackersForCategory)
             }
         }
-        self.filteredTrackers = newFilteredTrackers
         self.visibleCategories = newVisibleCategories
+        self.filteredTrackers = newFilteredTrackers
     }
 }
 
@@ -277,13 +297,9 @@ extension TrackerViewController: UICollectionViewDataSource {
         }
         let category = visibleCategories[indexPath.section]
         let tracker = category.trackers[indexPath.row]
-        let completedDays = completedTrackers.filter { completedTracker in
-            return completedTracker.trackerId == tracker.id
-        }.count
-        let isCompleted = completedTrackers.contains { completedTracker in
-            return completedTracker.trackerId == tracker.id && completedTracker.date == currentDate
-        }
-        cell.configure(isCompleted: isCompleted, trackerID: tracker.id, trackerName: tracker.name, indexPath: indexPath, categoryTitle: category.title, completedDays: completedDays, currentDate: currentDate)
+        let completedDays = (try? trackerRecordStore.fetchCompletedDates(forTrackerId: tracker.id).count) ?? 0
+        let isCompleted = (try? trackerRecordStore.isTrackerCompleted(trackerId: tracker.id, onDate: currentDate)) ?? false
+        cell.configure(isCompleted: isCompleted, trackerID: tracker.id, trackerName: tracker.name, indexPath: indexPath, categoryTitle: category.title, completedDays: completedDays, currentDate: currentDate, color: tracker.color, emoji: tracker.emoji)
         cell.delegate = self
         return cell
     }
@@ -314,5 +330,37 @@ extension TrackerViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
                         insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(top: 24, left: 16, bottom: 0, right: 16)
+    }
+}
+
+extension TrackerViewController: TrackerStoreDelegate {
+    func store(_ store: TrackerStore, didUpdate update: TrackerStoreUpdate) {
+        collectionView.performBatchUpdates {
+            if !update.insertedIndexesSection.isEmpty {
+                collectionView.insertSections(update.insertedIndexesSection)
+            }
+            if !update.deletedIndexesSection.isEmpty {
+                collectionView.deleteSections(update.deletedIndexesSection)
+            }
+            if !update.insertedIndexPath.isEmpty {
+                collectionView.insertItems(at: update.insertedIndexPath)
+            }
+            if !update.deletedIndexPath.isEmpty {
+                collectionView.deleteItems(at: update.deletedIndexPath)
+            }
+            if !update.movedIndexPath.isEmpty {
+                for move in update.movedIndexPath {
+                    collectionView.moveItem(at: move.0, to: move.1)
+                }
+            }
+        } completion: { _ in
+            self.updateVisibleCategories()
+        }
+    }
+}
+
+extension TrackerViewController: TrackerRecordStoreDelegate {
+    func trackerRecordStoreDidUpdateRecords(_ store: TrackerRecordStore) {
+        collectionView.reloadData()
     }
 }

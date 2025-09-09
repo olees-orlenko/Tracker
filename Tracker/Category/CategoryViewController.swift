@@ -13,6 +13,19 @@ final class CategoryViewController: UIViewController{
     
     var categories: [String] = []
     var selectedCategory: String?
+    private let trackerCategoryStore: TrackerCategoryStore
+    
+    // MARK: - Initializers
+    
+    init() {
+        self.trackerCategoryStore = TrackerCategoryStore()
+        super.init(nibName: nil, bundle: nil)
+        self.trackerCategoryStore.delegate = self
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     // MARK: - Lifecycle
     
@@ -22,6 +35,8 @@ final class CategoryViewController: UIViewController{
         setupTableView()
         setupDoneButton()
         setupConstraints()
+        categories = trackerCategoryStore.getCategoryTitles()
+        tableView.reloadData()
     }
     
     // MARK: - Setup UI
@@ -91,19 +106,24 @@ final class CategoryViewController: UIViewController{
         }
     }
 }
+
 // MARK: - UITableViewDataSource
 
 extension CategoryViewController: UITableViewDataSource {
     
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return trackerCategoryStore.numberOfSections()
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories.count
+        return trackerCategoryStore.numberOfRowsInSection(section)
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as? CategoryScheduleTableViewCell else {
             return UITableViewCell()
         }
-        let categoryTitle = categories[indexPath.row]
+        let categoryTitle = trackerCategoryStore.categoryTitle(at: indexPath) ?? "Неизвестная категория"
         cell.titleLabel.text = categoryTitle
         cell.subtitleLabel.text = nil
         cell.subtitleLabel.isHidden = true
@@ -119,8 +139,21 @@ extension CategoryViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        selectedCategory = categories[indexPath.row]
+        selectedCategory = trackerCategoryStore.categoryTitle(at: indexPath)
         delegate?.didUpdateCategory(selectedCategory ?? "Важное")
         tableView.reloadData()
+    }
+}
+
+// MARK: - TrackerCategoryStoreDelegate
+
+extension CategoryViewController: TrackerCategoryStoreDelegate {
+    func trackerCategoryStore(_ store: TrackerCategoryStore, didUpdate update: TrackerCategoryStoreUpdate) {
+        tableView.performBatchUpdates {
+            tableView.insertRows(at: update.insertedIndexPath, with: .automatic)
+            tableView.deleteRows(at: update.deletedIndexPath, with: .automatic)
+        } completion: { _ in
+            self.categories = store.getCategoryTitles()
+        }
     }
 }
