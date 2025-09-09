@@ -39,5 +39,4 @@ final class EmojisAndColorsSupplementaryView: UICollectionReusableView {
             titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
     }
-    
 }

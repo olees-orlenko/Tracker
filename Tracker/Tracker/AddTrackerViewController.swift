@@ -349,7 +349,6 @@ extension AddTrackerViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         if indexPath.row == 0 {
             let categoryViewController = CategoryViewController()
-            categoryViewController.categories = categories
             categoryViewController.delegate = self
             categoryViewController.selectedCategory = selectedCategory
             navigationController?.pushViewController(categoryViewController, animated: true)
