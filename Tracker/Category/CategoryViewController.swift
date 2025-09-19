@@ -238,6 +238,5 @@ extension CategoryViewController: AddCategoryViewControllerDelegate {
         } catch {
             print("Не удалось создать категорию: \(error)")
         }
-        self.navigationController?.popViewController(animated: true)
     }
 }

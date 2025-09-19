@@ -366,6 +366,7 @@ extension AddTrackerViewController: CategoryViewControllerDelegate {
     func didSelectCategory(_ category: String) {
         selectedCategory = category
         tableView.reloadData()
+        navigationController?.popViewController(animated: true)
     }
 }
 
