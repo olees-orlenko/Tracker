@@ -14,7 +14,6 @@ final class CategoryViewController: UIViewController{
     // MARK: - Properties
     
     private var selectedCategoryIndex: Int?
-    private let trackerCategoryStore: TrackerCategoryStore
     private var viewModel: CategoryViewModelProtocol
     
     private var visibleCategories: [TrackerCategory] = [] {
@@ -27,9 +26,7 @@ final class CategoryViewController: UIViewController{
     
     init(viewModel: CategoryViewModelProtocol) {
         self.viewModel = viewModel
-        self.trackerCategoryStore = TrackerCategoryStore()
         super.init(nibName: nil, bundle: nil)
-        self.trackerCategoryStore.delegate = self
     }
     
     required init?(coder: NSCoder) {
