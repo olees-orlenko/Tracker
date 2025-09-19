@@ -28,7 +28,6 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     // MARK: - Properties
     
     let sections = ["Категория", "Расписание"]
-    var categories: [String] = ["Важное", "Неважное"]
     var trackerId: UUID!
     var currentDate: Date?
     private var selectedDays: [Week] = []
@@ -175,6 +174,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     }
     
     // MARK: - Constraints
+    
     private func setupConstraints() {
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -231,19 +231,19 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     @objc private func cancelButtonTapped() {
         dismiss(animated: true)
     }
-
+    
     @objc private func saveButtonTapped() {
         guard let name = nameTrackerTextField.text, !name.isEmpty else {
             return
         }
         textErrorLabel.isHidden = true
         let newTracker = Tracker(
-                id: UUID(),
-                name: name,
-                color: selectedColor ?? .colorSelection1,
-                emoji: selectedEmoji ?? "🙂",
-                schedule: selectedDays
-            )
+            id: UUID(),
+            name: name,
+            color: selectedColor ?? .colorSelection1,
+            emoji: selectedEmoji ?? "🙂",
+            schedule: selectedDays
+        )
         guard let selectedCategory = selectedCategory else {
             return
         }
@@ -348,9 +348,9 @@ extension AddTrackerViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         if indexPath.row == 0 {
-            let categoryViewController = CategoryViewController()
+            let categoryViewModel = CategoryViewModel(trackerCategoryStore: TrackerCategoryStore())
+            let categoryViewController = CategoryViewController(viewModel: categoryViewModel)
             categoryViewController.delegate = self
-            categoryViewController.selectedCategory = selectedCategory
             navigationController?.pushViewController(categoryViewController, animated: true)
         } else if indexPath.row == 1 {
             let scheduleViewController = ScheduleViewController()
@@ -363,8 +363,8 @@ extension AddTrackerViewController: UITableViewDelegate {
 }
 
 extension AddTrackerViewController: CategoryViewControllerDelegate {
-    func didUpdateCategory(_ categoryTitle: String) {
-        self.selectedCategory = categoryTitle
+    func didSelectCategory(_ category: String) {
+        selectedCategory = category
         tableView.reloadData()
     }
 }
@@ -372,9 +372,9 @@ extension AddTrackerViewController: CategoryViewControllerDelegate {
 extension AddTrackerViewController: UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-            return CGSize(width: 52, height: 52)
-        }
-
+        return CGSize(width: 52, height: 52)
+    }
+    
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if collectionView == emojisCollectionView {
             if let previousSelectedIndex = selectedEmojiIndex,
@@ -406,8 +406,8 @@ extension AddTrackerViewController: UICollectionViewDelegateFlowLayout {
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
-            return 5
-        }
+        return 5
+    }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
         return 0
@@ -429,23 +429,23 @@ extension AddTrackerViewController: UICollectionViewDataSource {
         }
         return 0
     }
-
+    
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: EmojiColorCollectionViewCell.reuseIdentifier, for: indexPath) as! EmojiColorCollectionViewCell
-           if collectionView == emojisCollectionView {
-                   cell.label.text = emojis[indexPath.row]
-                   cell.colorView.isHidden = true
-                   cell.backgroundColor = .clear
-               } else if collectionView == colorsCollectionView {
-                   cell.colorView.backgroundColor = colors[indexPath.row]
-                   cell.colorView.isHidden = false
-                   cell.label.isHidden = true
-                   cell.backgroundColor = .clear
-               }
-
-            return cell
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: EmojiColorCollectionViewCell.reuseIdentifier, for: indexPath) as! EmojiColorCollectionViewCell
+        if collectionView == emojisCollectionView {
+            cell.label.text = emojis[indexPath.row]
+            cell.colorView.isHidden = true
+            cell.backgroundColor = .clear
+        } else if collectionView == colorsCollectionView {
+            cell.colorView.backgroundColor = colors[indexPath.row]
+            cell.colorView.isHidden = false
+            cell.label.isHidden = true
+            cell.backgroundColor = .clear
         }
-
+        
+        return cell
+    }
+    
     func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
         if kind == UICollectionView.elementKindSectionHeader {
             let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: EmojiColorHeaderView.reuseIdentifier, for: indexPath) as! EmojiColorHeaderView

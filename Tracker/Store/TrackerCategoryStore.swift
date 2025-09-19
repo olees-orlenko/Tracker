@@ -42,8 +42,8 @@ final class TrackerCategoryStore: NSObject {
         self.context = context
         super.init()
         performFetch()
-        addDefaultCategories()
     }
+    
     private func performFetch() {
         do {
             try fetchedResultsController.performFetch()
@@ -53,18 +53,15 @@ final class TrackerCategoryStore: NSObject {
     }
     
     func createCategory(title: String) throws -> TrackerCategoryCoreData {
-        if let existingCategory = try fetchCategory(withTitle: title) {
-            print("Category '\(title)' already exists.")
-            return existingCategory
-        }
         let categoryCoreData = TrackerCategoryCoreData(context: context)
         categoryCoreData.title = title
         do {
             try context.save()
-            print("Category '\(title)' created and saved.")
+            performFetch()
+            print("Категория '\(title)' создана.")
             return categoryCoreData
         } catch {
-            print("Failed to save new category: \(error)")
+            print("Ошибка при создании категории: \(error)")
             throw TrackerCategoryStoreError.saveFailed(error)
         }
     }
@@ -95,23 +92,6 @@ final class TrackerCategoryStore: NSObject {
     
     func categoryTitle(at indexPath: IndexPath) -> String? {
         return fetchedResultsController.object(at: indexPath).title
-    }
-    
-    func addDefaultCategories() {
-        do {
-            let count = fetchedResultsController.fetchedObjects?.count ?? 0
-            if count == 0 {
-                let defaultCategories = ["Важное", "Неважное"]
-                for title in defaultCategories {
-                    _ = try createCategory(title: title)
-                }
-                try context.save()
-                try fetchedResultsController.performFetch()
-                delegate?.trackerCategoryStore(self, didUpdate: TrackerCategoryStoreUpdate(insertedIndexPath: [], deletedIndexPath: []))
-            }
-        } catch {
-            print("Failed to check if default categories exist: \(error)")
-        }
     }
 }
 

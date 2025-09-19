@@ -22,7 +22,6 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     // MARK: - Private Properties
     
-    private var completedTrackers: [TrackerRecord] = []
     private var visibleCategories: [TrackerCategory] = [] {
         didSet {
             collectionView.reloadData()

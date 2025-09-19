@@ -8,16 +8,25 @@ final class CategoryViewController: UIViewController{
     
     private var tableView = UITableView()
     private let doneButton = UIButton()
+    private var imageView = UIImageView()
+    private let textLabel = UILabel()
     
     // MARK: - Properties
     
-    var categories: [String] = []
-    var selectedCategory: String?
+    private var selectedCategoryIndex: Int?
     private let trackerCategoryStore: TrackerCategoryStore
+    private var viewModel: CategoryViewModelProtocol
+    
+    private var visibleCategories: [TrackerCategory] = [] {
+        didSet {
+            updateImageView()
+        }
+    }
     
     // MARK: - Initializers
     
-    init() {
+    init(viewModel: CategoryViewModelProtocol) {
+        self.viewModel = viewModel
         self.trackerCategoryStore = TrackerCategoryStore()
         super.init(nibName: nil, bundle: nil)
         self.trackerCategoryStore.delegate = self
@@ -31,18 +40,22 @@ final class CategoryViewController: UIViewController{
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationItem.hidesBackButton = true
         setupView()
         setupTableView()
         setupDoneButton()
+        setupImageView()
+        setupTextLabel()
         setupConstraints()
-        categories = trackerCategoryStore.getCategoryTitles()
         tableView.reloadData()
+        bindViewModel()
+        viewModel.loadCategories()
+        updateImageView()
     }
     
     // MARK: - Setup UI
     
     private func setupView() {
-        tableView.tableFooterView = UIView()
         view.backgroundColor = .white
         navigationItem.title = "Категория"
         let title: [NSAttributedString.Key: Any] = [
@@ -52,8 +65,29 @@ final class CategoryViewController: UIViewController{
         navigationController?.navigationBar.titleTextAttributes = title
     }
     
+    private func setupTextLabel() {
+        textLabel.text = "Привычки и события можно\n объединить по смыслу"
+        textLabel.numberOfLines = 2
+        textLabel.textColor = UIColor(resource: .black)
+        textLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        textLabel.textAlignment = .center
+        textLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(textLabel)
+    }
+    
+    private func setupImageView(){
+        let image = UIImage(named: "image_1")
+        imageView = UIImageView(image: image)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(imageView)
+        imageView.contentMode = .scaleAspectFit
+        imageView.tintColor = UIColor(resource: .black)
+    }
+    
     private func setupTableView() {
         tableView.separatorStyle = .singleLine
+        tableView.tableHeaderView = UIView()
+        tableView.tableFooterView = UIView()
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
         tableView.tableHeaderView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: CGFloat.leastNormalMagnitude))
         tableView.layer.cornerRadius = 16
@@ -67,7 +101,7 @@ final class CategoryViewController: UIViewController{
     }
     
     private func setupDoneButton() {
-        doneButton.setTitle("Готово", for: .normal)
+        doneButton.setTitle("Добавить категорию", for: .normal)
         doneButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         doneButton.setTitleColor(.white, for: .normal)
         doneButton.backgroundColor = UIColor(resource: .black)
@@ -85,25 +119,49 @@ final class CategoryViewController: UIViewController{
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 44),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            tableView.heightAnchor.constraint(equalToConstant: 525),
+            tableView.bottomAnchor.constraint(equalTo: doneButton.topAnchor, constant: -24),
             doneButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             doneButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             doneButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             doneButton.heightAnchor.constraint(equalToConstant: 60),
+            imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            imageView.widthAnchor.constraint(equalToConstant: 80),
+            imageView.heightAnchor.constraint(equalToConstant: 80),
+            imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 147),
+            textLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            textLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
+            textLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
+    }
+    
+    private func updateImageView() {
+        imageView.isHidden = !visibleCategories.isEmpty
+        textLabel.isHidden = !visibleCategories.isEmpty
+    }
+    
+    // MARK: - ViewModel Binding
+    
+    private func bindViewModel() {
+        viewModel.onCategoriesUpdate = { [weak self] in
+            DispatchQueue.main.async {
+                self?.visibleCategories = self?.viewModel.categories ?? []
+                self?.tableView.reloadData()
+                self?.updateImageView()
+            }
+        }
+        viewModel.onCategorySelected = { [weak self] category in
+            self?.delegate?.didSelectCategory(category.title)
+            self?.navigationController?.popViewController(animated: true)
+        }
     }
     
     // MARK: - Actions
     
     @objc private func doneButtonTapped() {
-        if let selectedCategory = selectedCategory {
-            delegate?.didUpdateCategory(selectedCategory)
-        }
-        if let navigationController = navigationController {
-            navigationController.popViewController(animated: true)
-        } else {
-            dismiss(animated: true, completion: nil)
-        }
+        let addCategoryViewController = AddCategoryViewController()
+        addCategoryViewController.delegate = self
+        let navigationController = UINavigationController(rootViewController: addCategoryViewController)
+        present(navigationController, animated: true)
     }
 }
 
@@ -111,26 +169,36 @@ final class CategoryViewController: UIViewController{
 
 extension CategoryViewController: UITableViewDataSource {
     
-    func numberOfSections(in tableView: UITableView) -> Int {
-        return trackerCategoryStore.numberOfSections()
-    }
-    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return trackerCategoryStore.numberOfRowsInSection(section)
+        return viewModel.categories.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryScheduleTableViewCell.reuseIdentifier, for: indexPath) as? CategoryScheduleTableViewCell else {
             return UITableViewCell()
         }
-        let categoryTitle = trackerCategoryStore.categoryTitle(at: indexPath) ?? "Неизвестная категория"
-        cell.titleLabel.text = categoryTitle
+        guard indexPath.row < viewModel.categories.count else {
+            return cell
+        }
+        let category = viewModel.categories[indexPath.row]
+        cell.contentView.backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
+        let backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
+        cell.backgroundColor = backgroundColor
+        cell.contentView.backgroundColor = .clear
+        cell.titleLabel.text = category.title
         cell.subtitleLabel.text = nil
         cell.subtitleLabel.isHidden = true
-        cell.accessoryType = categoryTitle == selectedCategory ? .checkmark : .none
+        cell.accessoryType = (indexPath.row == selectedCategoryIndex) ? .checkmark : .none
+        cell.selectionStyle = .none
+        if indexPath.row == viewModel.categories.count - 1 {
+            cell.layer.cornerRadius = 16
+            cell.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        } else {
+            cell.layer.cornerRadius = 0
+            cell.layer.maskedCorners = []
+        }
         return cell
     }
-    
 }
 
 // MARK: - UITableViewDelegate
@@ -139,8 +207,11 @@ extension CategoryViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        selectedCategory = trackerCategoryStore.categoryTitle(at: indexPath)
-        delegate?.didUpdateCategory(selectedCategory ?? "Важное")
+        guard indexPath.row < viewModel.categories.count else {
+            return
+        }
+        selectedCategoryIndex = indexPath.row
+        viewModel.didSelectCategory(at: indexPath)
         tableView.reloadData()
     }
 }
@@ -152,8 +223,24 @@ extension CategoryViewController: TrackerCategoryStoreDelegate {
         tableView.performBatchUpdates {
             tableView.insertRows(at: update.insertedIndexPath, with: .automatic)
             tableView.deleteRows(at: update.deletedIndexPath, with: .automatic)
-        } completion: { _ in
-            self.categories = store.getCategoryTitles()
+        } completion: { [weak self] _ in
+            guard let self = self else { return }
+            self.viewModel.loadCategories()
         }
+    }
+}
+
+extension CategoryViewController: AddCategoryViewControllerDelegate {
+    
+    func didCreateCategory(_ categoryTitle: String) {
+        do {
+            _ = try viewModel.trackerCategoryStore.createCategory(title: categoryTitle)
+            viewModel.loadCategories()
+            self.tableView.reloadData()
+            self.updateImageView()
+        } catch {
+            print("Не удалось создать категорию: \(error)")
+        }
+        self.navigationController?.popViewController(animated: true)
     }
 }
