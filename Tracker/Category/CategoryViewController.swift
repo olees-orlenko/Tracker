@@ -83,9 +83,9 @@ final class CategoryViewController: UIViewController{
     }
     
     private func setupTableView() {
-        tableView.separatorStyle = .singleLine
-        tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        tableView.separatorStyle = .none
         tableView.tableHeaderView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: CGFloat.leastNormalMagnitude))
+        tableView.tableFooterView = UIView()
         tableView.layer.cornerRadius = 16
         tableView.layer.masksToBounds = true
         tableView.delegate = self
@@ -144,8 +144,39 @@ final class CategoryViewController: UIViewController{
                 print("visibleCategories updated: \(self.visibleCategories.count) categories")
                 self.tableView.reloadData()
                 self.updateImageView()
+                self.tableView.layoutIfNeeded()
+                self.refreshCustomSeparators()
             }
         }}
+    
+    // MARK: - Appearance helpers
+    
+    private func configureAppearance(for cell: UITableViewCell, at indexPath: IndexPath) {
+        let numberOfRows = tableView.numberOfRows(inSection: indexPath.section)
+        cell.layer.masksToBounds = true
+        cell.layer.cornerRadius = 16
+        if numberOfRows == 1 {
+            cell.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        } else {
+            if indexPath.row == 0 {
+                cell.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            } else if indexPath.row == numberOfRows - 1 {
+                cell.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+            } else {
+                cell.layer.maskedCorners = []
+            }
+        }
+    }
+    
+    private func refreshCustomSeparators() {
+        guard let visibleIndexPaths = tableView.indexPathsForVisibleRows else { return }
+        for indexPath in visibleIndexPaths {
+            if let cell = tableView.cellForRow(at: indexPath) as? CategoryTableViewCell {
+                let lastRow = tableView.numberOfRows(inSection: indexPath.section) - 1
+                cell.setSeparatorHidden(indexPath.row == lastRow)
+            }
+        }
+    }
     
     // MARK: - Actions
     
@@ -200,29 +231,16 @@ extension CategoryViewController: UITableViewDelegate {
         let selectedCategory = viewModel.categories[indexPath.row]
         delegate?.didSelectCategory(categoryTitle: selectedCategory.title)
         navigationController?.popViewController(animated: true)
+        tableView.reloadData()
     }
     
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-            let numberOfRows = tableView.numberOfRows(inSection: indexPath.section)
-            cell.layer.masksToBounds = true
-            cell.layer.cornerRadius = 16
-            if numberOfRows == 1 {
-                cell.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
-            } else {
-                if indexPath.row == 0 {
-                    cell.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-                } else if indexPath.row == numberOfRows - 1 {
-                    cell.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
-                } else {
-                    cell.layer.maskedCorners = []
-                }
-            }
-            if indexPath.row == numberOfRows - 1 {
-                cell.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: .greatestFiniteMagnitude)
-            } else {
-                cell.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
-            }
+        configureAppearance(for: cell, at: indexPath)
+        if let cell = cell as? CategoryTableViewCell {
+            let lastRow = tableView.numberOfRows(inSection: indexPath.section) - 1
+            cell.setSeparatorHidden(indexPath.row == lastRow)
         }
+    }
 }
 
 extension CategoryViewController: AddCategoryViewControllerDelegate {
@@ -230,5 +248,6 @@ extension CategoryViewController: AddCategoryViewControllerDelegate {
     func didCreateCategory(_ categoryTitle: String) {
         viewModel.createCategory(title: categoryTitle)
         self.updateImageView()
+        self.refreshCustomSeparators()
     }
 }
