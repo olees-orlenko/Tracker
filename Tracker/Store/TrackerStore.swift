@@ -53,13 +53,14 @@ final class TrackerStore: NSObject {
             cacheName: nil
         )
         self.fetchedResultsController = controller
+        controller.delegate = self
         do {
             try controller.performFetch()        } catch {
                 print("Failed to perform fetch for TrackerStore: \(error)")
             }
     }
     
-    func tracker(from trackerCoreData: TrackerCoreData) throws -> Tracker {
+    func tracker(from trackerCoreData: TrackerCoreData) throws -> Tracker? {
         guard let id = trackerCoreData.id,
               let name = trackerCoreData.name,
               let colorString = trackerCoreData.color,
@@ -103,9 +104,9 @@ final class TrackerStore: NSObject {
 extension TrackerStore: NSFetchedResultsControllerDelegate {
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         insertedIndexesSection = IndexSet()
+        deletedIndexesSection = IndexSet()
         insertedIndexPath = []
         deletedIndexPath = []
-        deletedIndexesSection = IndexSet()
         movedIndexPath = []
     }
     
@@ -118,11 +119,11 @@ extension TrackerStore: NSFetchedResultsControllerDelegate {
             movedIndexPath: movedIndexPath ?? []
         )
         delegate?.store(self, didUpdate: update)
-        insertedIndexesSection = nil
-        insertedIndexPath = nil
-        deletedIndexPath = nil
-        deletedIndexesSection = nil
-        movedIndexPath = nil
+        insertedIndexesSection = IndexSet()
+        deletedIndexesSection = IndexSet()
+        insertedIndexPath = []
+        deletedIndexPath = []
+        movedIndexPath = []
     }
     
     func controller(
@@ -136,6 +137,7 @@ extension TrackerStore: NSFetchedResultsControllerDelegate {
         case .insert:
             if let newIndexPath = newIndexPath {
                 insertedIndexPath?.append(newIndexPath)
+                print("insertedIndexPath: \(insertedIndexPath)")
             }
         case .delete:
             if let indexPath = indexPath {

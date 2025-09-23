@@ -2,12 +2,12 @@ import UIKit
 
 class EmojiColorHeaderView: UICollectionReusableView {
     static let reuseIdentifier = "EmojiColorHeaderView"
-
+    
     // MARK: - UI Elements
     
     let titleLabel = UILabel()
-
-    // MARK: - Initializers
+    
+    // MARK: - Init
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -15,7 +15,7 @@ class EmojiColorHeaderView: UICollectionReusableView {
         setupConstraints()
         addSubview(titleLabel)
     }
-
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }

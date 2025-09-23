@@ -8,7 +8,7 @@ final class EmojiColorCollectionViewCell: UICollectionViewCell {
     let label = UILabel()
     let colorView = UIView()
     
-    // MARK: - Initializers
+    // MARK: - Init
     
     override init(frame: CGRect) {
         super.init(frame: frame)

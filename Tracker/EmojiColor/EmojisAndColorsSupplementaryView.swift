@@ -7,8 +7,8 @@ final class EmojisAndColorsSupplementaryView: UICollectionReusableView {
     // MARK: - UI Elements
     
     let titleLabel = UILabel()
-
-    // MARK: - Initializers
+    
+    // MARK: - Init
     
     override init(frame: CGRect) {
         super.init(frame: frame)

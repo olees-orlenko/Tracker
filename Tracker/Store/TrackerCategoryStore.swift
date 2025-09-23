@@ -8,6 +8,8 @@ enum TrackerCategoryStoreError: Error {
 struct TrackerCategoryStoreUpdate {
     let insertedIndexPath: [IndexPath]
     let deletedIndexPath: [IndexPath]
+    let updatedIndexPath: [IndexPath]
+    let movedIndexPath: [(IndexPath, IndexPath)]
 }
 
 protocol TrackerCategoryStoreDelegate: AnyObject {
@@ -30,20 +32,25 @@ final class TrackerCategoryStore: NSObject {
         return controller
     }()
     private let context: NSManagedObjectContext
+    private let trackerStore: TrackerStore
     private var insertedIndexPath: [IndexPath] = []
     private var deletedIndexPath: [IndexPath] = []
+    private var updatedIndexPath: [IndexPath] = []
+    private var movedIndexPath: [(IndexPath, IndexPath)] = []
     
     convenience override init() {
         let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        self.init(context: context)
+        let trackerStore = TrackerStore(context: context)
+        self.init(context: context, trackerStore: trackerStore)
     }
     
-    init(context: NSManagedObjectContext) {
+    init(context: NSManagedObjectContext, trackerStore: TrackerStore) {
         self.context = context
+        self.trackerStore = trackerStore
         super.init()
         performFetch()
-        addDefaultCategories()
     }
+    
     private func performFetch() {
         do {
             try fetchedResultsController.performFetch()
@@ -53,18 +60,14 @@ final class TrackerCategoryStore: NSObject {
     }
     
     func createCategory(title: String) throws -> TrackerCategoryCoreData {
-        if let existingCategory = try fetchCategory(withTitle: title) {
-            print("Category '\(title)' already exists.")
-            return existingCategory
-        }
         let categoryCoreData = TrackerCategoryCoreData(context: context)
         categoryCoreData.title = title
         do {
             try context.save()
-            print("Category '\(title)' created and saved.")
+            print("Категория '\(title)' создана.")
             return categoryCoreData
         } catch {
-            print("Failed to save new category: \(error)")
+            print("Ошибка при создании категории: \(error)")
             throw TrackerCategoryStoreError.saveFailed(error)
         }
     }
@@ -79,6 +82,37 @@ final class TrackerCategoryStore: NSObject {
             print("Failed to fetch category with title '\(title)': \(error)")
             throw error
         }
+    }
+    
+    func fetchAllCategoriesWithTrackers() throws -> [TrackerCategory] {
+        let fetchRequest: NSFetchRequest<TrackerCategoryCoreData> = TrackerCategoryCoreData.fetchRequest()
+        let categoryCoreDataObjects = try context.fetch(fetchRequest)
+        var trackerCategories: [TrackerCategory] = []
+        for categoryCoreData in categoryCoreDataObjects {
+            guard let categoryTitle = categoryCoreData.title else {
+                continue
+            }
+            let trackersForThisCategory = try fetchTrackersForCategory(categoryCoreData: categoryCoreData)
+            let trackerCategory = TrackerCategory(
+                title: categoryTitle,
+                trackers: trackersForThisCategory
+            )
+            trackerCategories.append(trackerCategory)
+        }
+        return trackerCategories
+    }
+    
+    private func fetchTrackersForCategory(categoryCoreData: TrackerCategoryCoreData) throws -> [Tracker] {
+        guard let trackersCoreData = categoryCoreData.tracker?.allObjects as? [TrackerCoreData] else {
+            return []
+        }
+        var trackers: [Tracker] = []
+        for trackerCoreData in trackersCoreData {
+            if let tracker = try trackerStore.tracker(from: trackerCoreData) {
+                trackers.append(tracker)
+            }
+        }
+        return trackers
     }
     
     func numberOfSections() -> Int {
@@ -96,37 +130,28 @@ final class TrackerCategoryStore: NSObject {
     func categoryTitle(at indexPath: IndexPath) -> String? {
         return fetchedResultsController.object(at: indexPath).title
     }
-    
-    func addDefaultCategories() {
-        do {
-            let count = fetchedResultsController.fetchedObjects?.count ?? 0
-            if count == 0 {
-                let defaultCategories = ["Важное", "Неважное"]
-                for title in defaultCategories {
-                    _ = try createCategory(title: title)
-                }
-                try context.save()
-                try fetchedResultsController.performFetch()
-                delegate?.trackerCategoryStore(self, didUpdate: TrackerCategoryStoreUpdate(insertedIndexPath: [], deletedIndexPath: []))
-            }
-        } catch {
-            print("Failed to check if default categories exist: \(error)")
-        }
-    }
 }
 
 extension TrackerCategoryStore: NSFetchedResultsControllerDelegate {
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         insertedIndexPath = []
         deletedIndexPath = []
+        updatedIndexPath = []
+        movedIndexPath = []
     }
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         let update = TrackerCategoryStoreUpdate(
             insertedIndexPath: insertedIndexPath,
-            deletedIndexPath: deletedIndexPath
+            deletedIndexPath: deletedIndexPath,
+            updatedIndexPath: updatedIndexPath,
+            movedIndexPath: movedIndexPath
         )
         delegate?.trackerCategoryStore(self, didUpdate: update)
+        insertedIndexPath = []
+        deletedIndexPath = []
+        updatedIndexPath = []
+        movedIndexPath = []
     }
     
     func controller(
@@ -147,9 +172,12 @@ extension TrackerCategoryStore: NSFetchedResultsControllerDelegate {
             }
         case .update:
             if let indexPath = indexPath {
+                updatedIndexPath.append(indexPath)
             }
         case .move:
-            break
+            if let indexPath = indexPath, let newIndexPath = newIndexPath {
+                movedIndexPath.append((indexPath, newIndexPath))
+            }
         @unknown default:
             fatalError()
         }

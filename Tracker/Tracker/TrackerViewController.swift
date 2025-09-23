@@ -22,10 +22,8 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     // MARK: - Private Properties
     
-    private var completedTrackers: [TrackerRecord] = []
     private var visibleCategories: [TrackerCategory] = [] {
         didSet {
-            collectionView.reloadData()
             updateImageView()
         }
     }
@@ -39,7 +37,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private let trackerCategoryStore = TrackerCategoryStore()
     private let trackerRecordStore = TrackerRecordStore()
     
-    // MARK: - Initializers
+    // MARK: - Init
     
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -53,6 +51,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.trackerStore.delegate = self
         collectionView.dataSource = self
         collectionView.delegate = self
         setupView()
@@ -64,8 +63,8 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         setupTextLabel()
         setupDatePicker()
         setupConstraints()
-        updateImageView()
-        collectionView.reloadData()
+        try? trackerStore.fetchedResultsController.performFetch()
+        self.updateImageView()
         filterTrackersForSelectedDate(currentDate)
     }
     
@@ -194,23 +193,23 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     func addNewTracker(tracker newTracker: Tracker, title categoryTitle: String) {
         let category: TrackerCategoryCoreData
         do {
-            if let existingCategory = try trackerCategoryStore.fetchCategory(withTitle: categoryTitle) {
+            if let existingCategory = try self.trackerCategoryStore.fetchCategory(withTitle: categoryTitle) {
                 category = existingCategory
             } else {
-                category = try trackerCategoryStore.createCategory(title: categoryTitle)
+                category = try self.trackerCategoryStore.createCategory(title: categoryTitle)
             }
         } catch {
             print("Ошибка при получении или создании категории: \(error)")
             return
         }
         do {
-            try trackerStore.createTracker(newTracker, category: category)
+            try self.trackerStore.createTracker(newTracker, category: category)
+            try self.trackerStore.fetchedResultsController.performFetch()
         } catch {
             print("Ошибка при создании трекера: \(error)")
             return
         }
-        updateImageView()
-        collectionView.reloadData()
+        self.updateImageView()
     }
     
     func addTrackerRecord(trackerId: UUID, date: Date) {
@@ -242,12 +241,16 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         let dayOfWeek = calendar.component(.weekday, from: date)
         guard let selectedWeekDay = Week(calendarWeekday: dayOfWeek) else {
             self.visibleCategories = []
+            print("Не удалось получить день недели")
             return
         }
         let fetchRequest = trackerStore.fetchedResultsController.fetchRequest
-        fetchRequest.predicate = NSPredicate(format: "schedule & %d != 0", 1 << selectedWeekDay.bitValue)
+        let predicate = NSPredicate(format: "schedule & %d != 0", 1 << selectedWeekDay.bitValue)
+        fetchRequest.predicate = predicate
+        print("Предикат: \(predicate)")
         do {
             try trackerStore.fetchedResultsController.performFetch()
+            print("Количество трекеров после фильтрации: \(trackerStore.fetchedResultsController.fetchedObjects?.count ?? 0)")
             updateVisibleCategories()
         } catch {
             print("Ошибка получения трекера по предикату: \(error)")
@@ -277,6 +280,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         }
         self.visibleCategories = newVisibleCategories
         self.filteredTrackers = newFilteredTrackers
+        print("Количество категорий после обновления visibleCategories: \(visibleCategories.count)")
     }
 }
 
@@ -335,27 +339,8 @@ extension TrackerViewController: UICollectionViewDelegateFlowLayout {
 
 extension TrackerViewController: TrackerStoreDelegate {
     func store(_ store: TrackerStore, didUpdate update: TrackerStoreUpdate) {
-        collectionView.performBatchUpdates {
-            if !update.insertedIndexesSection.isEmpty {
-                collectionView.insertSections(update.insertedIndexesSection)
-            }
-            if !update.deletedIndexesSection.isEmpty {
-                collectionView.deleteSections(update.deletedIndexesSection)
-            }
-            if !update.insertedIndexPath.isEmpty {
-                collectionView.insertItems(at: update.insertedIndexPath)
-            }
-            if !update.deletedIndexPath.isEmpty {
-                collectionView.deleteItems(at: update.deletedIndexPath)
-            }
-            if !update.movedIndexPath.isEmpty {
-                for move in update.movedIndexPath {
-                    collectionView.moveItem(at: move.0, to: move.1)
-                }
-            }
-        } completion: { _ in
-            self.updateVisibleCategories()
-        }
+        updateVisibleCategories()
+        collectionView.reloadData()
     }
 }
 

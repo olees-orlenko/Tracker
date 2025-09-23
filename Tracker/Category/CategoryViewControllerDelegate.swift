@@ -1,3 +1,3 @@
 protocol CategoryViewControllerDelegate: AnyObject {
-    func didUpdateCategory(_ categoryTitle: String)
+    func didSelectCategory(categoryTitle: String)
 }

@@ -24,7 +24,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     private var isFutureDate: Bool = false
     private var color: UIColor?
     
-    // MARK: - Initializers
+    // MARK: - Init
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -194,7 +194,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
             addButton.backgroundColor = isCompleted ? color.withAlphaComponent(0.3) : color
         }
     }
-
+    
     private func setCategoryTitle(_ title: String) {
         if self.categoryTitle == nil {
             self.categoryTitle = title

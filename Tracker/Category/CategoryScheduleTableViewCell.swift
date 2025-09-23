@@ -9,7 +9,7 @@ final class CategoryScheduleTableViewCell: UITableViewCell {
     let titleLabel = UILabel()
     let subtitleLabel = UILabel()
     
-    // MARK: - Initializers
+    // MARK: - Init
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
