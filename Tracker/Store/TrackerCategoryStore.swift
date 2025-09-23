@@ -8,6 +8,8 @@ enum TrackerCategoryStoreError: Error {
 struct TrackerCategoryStoreUpdate {
     let insertedIndexPath: [IndexPath]
     let deletedIndexPath: [IndexPath]
+    let updatedIndexPath: [IndexPath]
+    let movedIndexPath: [(IndexPath, IndexPath)]
 }
 
 protocol TrackerCategoryStoreDelegate: AnyObject {
@@ -30,16 +32,21 @@ final class TrackerCategoryStore: NSObject {
         return controller
     }()
     private let context: NSManagedObjectContext
+    private let trackerStore: TrackerStore
     private var insertedIndexPath: [IndexPath] = []
     private var deletedIndexPath: [IndexPath] = []
+    private var updatedIndexPath: [IndexPath] = []
+    private var movedIndexPath: [(IndexPath, IndexPath)] = []
     
     convenience override init() {
         let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        self.init(context: context)
+        let trackerStore = TrackerStore(context: context)
+        self.init(context: context, trackerStore: trackerStore)
     }
     
-    init(context: NSManagedObjectContext) {
+    init(context: NSManagedObjectContext, trackerStore: TrackerStore) {
         self.context = context
+        self.trackerStore = trackerStore
         super.init()
         performFetch()
     }
@@ -57,7 +64,6 @@ final class TrackerCategoryStore: NSObject {
         categoryCoreData.title = title
         do {
             try context.save()
-            performFetch()
             print("Категория '\(title)' создана.")
             return categoryCoreData
         } catch {
@@ -76,6 +82,37 @@ final class TrackerCategoryStore: NSObject {
             print("Failed to fetch category with title '\(title)': \(error)")
             throw error
         }
+    }
+    
+    func fetchAllCategoriesWithTrackers() throws -> [TrackerCategory] {
+        let fetchRequest: NSFetchRequest<TrackerCategoryCoreData> = TrackerCategoryCoreData.fetchRequest()
+        let categoryCoreDataObjects = try context.fetch(fetchRequest)
+        var trackerCategories: [TrackerCategory] = []
+        for categoryCoreData in categoryCoreDataObjects {
+            guard let categoryTitle = categoryCoreData.title else {
+                continue
+            }
+            let trackersForThisCategory = try fetchTrackersForCategory(categoryCoreData: categoryCoreData)
+            let trackerCategory = TrackerCategory(
+                title: categoryTitle,
+                trackers: trackersForThisCategory
+            )
+            trackerCategories.append(trackerCategory)
+        }
+        return trackerCategories
+    }
+    
+    private func fetchTrackersForCategory(categoryCoreData: TrackerCategoryCoreData) throws -> [Tracker] {
+        guard let trackersCoreData = categoryCoreData.tracker?.allObjects as? [TrackerCoreData] else {
+            return []
+        }
+        var trackers: [Tracker] = []
+        for trackerCoreData in trackersCoreData {
+            if let tracker = try trackerStore.tracker(from: trackerCoreData) {
+                trackers.append(tracker)
+            }
+        }
+        return trackers
     }
     
     func numberOfSections() -> Int {
@@ -99,14 +136,22 @@ extension TrackerCategoryStore: NSFetchedResultsControllerDelegate {
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         insertedIndexPath = []
         deletedIndexPath = []
+        updatedIndexPath = []
+        movedIndexPath = []
     }
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         let update = TrackerCategoryStoreUpdate(
             insertedIndexPath: insertedIndexPath,
-            deletedIndexPath: deletedIndexPath
+            deletedIndexPath: deletedIndexPath,
+            updatedIndexPath: updatedIndexPath,
+            movedIndexPath: movedIndexPath
         )
         delegate?.trackerCategoryStore(self, didUpdate: update)
+        insertedIndexPath = []
+        deletedIndexPath = []
+        updatedIndexPath = []
+        movedIndexPath = []
     }
     
     func controller(
@@ -127,9 +172,12 @@ extension TrackerCategoryStore: NSFetchedResultsControllerDelegate {
             }
         case .update:
             if let indexPath = indexPath {
+                updatedIndexPath.append(indexPath)
             }
         case .move:
-            break
+            if let indexPath = indexPath, let newIndexPath = newIndexPath {
+                movedIndexPath.append((indexPath, newIndexPath))
+            }
         @unknown default:
             fatalError()
         }

@@ -1,7 +1,7 @@
 import UIKit
 import SwiftUI
 
-class OnboardingViewController: UIPageViewController {
+final class OnboardingViewController: UIPageViewController {
     
     var onboardingCompletionHandler: (() -> Void)?
     
@@ -15,7 +15,7 @@ class OnboardingViewController: UIPageViewController {
         OnboardingTrackerViewController(imageName: "Onboarding1", labelText: "Отслеживайте только то, что хотите"),
         OnboardingTrackerViewController(imageName: "Onboarding2", labelText: "Даже если это\nне литры воды и йога")
     ]
-
+    
     private lazy var pageControl: UIPageControl = {
         let pageControl = UIPageControl()
         pageControl.numberOfPages = pages.count
@@ -26,7 +26,7 @@ class OnboardingViewController: UIPageViewController {
         return pageControl
     }()
     
-    // MARK: - Initializers
+    // MARK: - Init
     
     override init(transitionStyle: UIPageViewController.TransitionStyle, navigationOrientation: UIPageViewController.NavigationOrientation, options: [UIPageViewController.OptionsKey : Any]? = nil) {
         super.init(transitionStyle: .scroll, navigationOrientation: navigationOrientation, options: options)
@@ -78,7 +78,7 @@ class OnboardingViewController: UIPageViewController {
     }
     
     // MARK: - Actions
-
+    
     @objc private func tapButton() {
         UserDefaults.standard.set(true, forKey: "onboardingWasShown")
         onboardingCompletionHandler?()

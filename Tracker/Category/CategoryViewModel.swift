@@ -5,10 +5,10 @@ protocol CategoryViewModelProtocol: AnyObject {
     var trackerCategoryStore: TrackerCategoryStore { get }
     var categories: [TrackerCategory] { get }
     var onCategoriesUpdate: (() -> Void)? { get set }
-    var selectedCategory: TrackerCategory? { get set }
     var onCategorySelected: ((TrackerCategory) -> Void)? { get set }
     
     func loadCategories()
+    func createCategory(title: String)
     func didSelectCategory(at indexPath: IndexPath)
 }
 
@@ -30,7 +30,7 @@ final class CategoryViewModel: CategoryViewModelProtocol {
     var onCategorySelected: ((TrackerCategory) -> Void)?
     var trackers: [Tracker] = []
     
-    // MARK: - Initializer
+    // MARK: - Init
     
     init(trackerCategoryStore: TrackerCategoryStore) {
         self.trackerCategoryStore = trackerCategoryStore
@@ -38,8 +38,22 @@ final class CategoryViewModel: CategoryViewModelProtocol {
     }
     
     func loadCategories() {
-        self.categories = trackerCategoryStore.getCategoryTitles().map {
-            TrackerCategory(title: $0, trackers: trackers)
+        print("loadCategories called")
+        do {
+            self.categories = try trackerCategoryStore.fetchAllCategoriesWithTrackers()
+            print("loadCategories loaded: \(self.categories.count) categories")
+        } catch {
+            print("Ошибка загрузки категорий: \(error)")
+        }
+    }
+    
+    func createCategory(title: String) {
+        print("createCategory called with title: \(title)")
+        do {
+            try trackerCategoryStore.createCategory(title: title)
+            loadCategories()
+        } catch {
+            print("Не удалось создать категорию: \(error)")
         }
     }
     
@@ -54,6 +68,8 @@ final class CategoryViewModel: CategoryViewModelProtocol {
 
 extension CategoryViewModel: TrackerCategoryStoreDelegate {
     func trackerCategoryStore(_ store: TrackerCategoryStore, didUpdate update: TrackerCategoryStoreUpdate) {
+        print("didUpdateCategories called")
         loadCategories()
+        onCategoriesUpdate?()
     }
 }

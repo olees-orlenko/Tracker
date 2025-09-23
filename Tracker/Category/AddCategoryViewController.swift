@@ -34,8 +34,6 @@ final class AddCategoryViewController: UIViewController {
         dismiss(animated: true)
     }
     
-    
-    
     // MARK: - Setup UI
     
     private func setupTextField() {

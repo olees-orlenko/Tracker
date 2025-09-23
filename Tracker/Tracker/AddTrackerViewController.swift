@@ -31,7 +31,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     var trackerId: UUID!
     var currentDate: Date?
     private var selectedDays: [Week] = []
-    var selectedCategory: String?
+    private var selectedCategoryTitle: String?
     var selectedEmoji: String?
     var selectedColor: UIColor?
     
@@ -52,6 +52,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     
     private var selectedEmojiIndex: Int?
     private var selectedColorIndex: Int?
+    private var isTrackerSaved = false
     
     // MARK: - Lifecycle
     
@@ -106,7 +107,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
         nameTrackerTextField.returnKeyType = .done
         nameTrackerTextField.enablesReturnKeyAutomatically = true
         nameTrackerTextField.smartInsertDeleteType = .no
-        nameTrackerTextField.textColor = UIColor(resource: .gray)
+        nameTrackerTextField.textColor = UIColor(resource: .black)
         nameTrackerTextField.font = UIFont.systemFont(ofSize: 17, weight: .regular)
         nameTrackerTextField.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(nameTrackerTextField)
@@ -233,6 +234,10 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     }
     
     @objc private func saveButtonTapped() {
+        guard !isTrackerSaved else {
+            return
+        }
+        isTrackerSaved = true
         guard let name = nameTrackerTextField.text, !name.isEmpty else {
             return
         }
@@ -244,10 +249,12 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
             emoji: selectedEmoji ?? "🙂",
             schedule: selectedDays
         )
-        guard let selectedCategory = selectedCategory else {
+        guard let selectedCategory = selectedCategoryTitle else {
             return
         }
+        print("addNewTracker called with tracker: \(name) and title: \(selectedCategoryTitle ?? "nil")")
         delegate?.addNewTracker(tracker: newTracker, title: selectedCategory)
+        createButton.isEnabled = false
         dismiss(animated: true, completion: nil)
     }
     
@@ -259,7 +266,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     
     private func updateCreateButton() {
         let isNameValid = nameTrackerTextField.text?.isEmpty == false
-        let isCategorySelected = selectedCategory != nil
+        let isCategorySelected = selectedCategoryTitle != nil
         let isScheduleSelected = selectedDays.count > 0
         let isEmojiSelected = selectedEmoji != nil
         let isColorSelected = selectedColor != nil
@@ -311,20 +318,24 @@ extension AddTrackerViewController: UITableViewDataSource {
         let title = sections[indexPath.row]
         var subtitle: String? = nil
         if indexPath.row == 0 {
-            subtitle = selectedCategory
-        } else if indexPath.row == 1 && !selectedDays.isEmpty {
-            let dayAbbreviations = selectedDays.map { day in
-                switch day {
-                case .monday: return "Пн"
-                case .tuesday: return "Вт"
-                case .wednesday: return "Ср"
-                case .thursday: return "Чт"
-                case .friday: return "Пт"
-                case .saturday: return "Сб"
-                case .sunday: return "Вс"
+            subtitle = selectedCategoryTitle
+        } else if indexPath.row == 1 {
+            if selectedDays.count == 7 {
+                subtitle = "Каждый день"
+            } else if !selectedDays.isEmpty {
+                let dayAbbreviations = selectedDays.map { day in
+                    switch day {
+                    case .monday: return "Пн"
+                    case .tuesday: return "Вт"
+                    case .wednesday: return "Ср"
+                    case .thursday: return "Чт"
+                    case .friday: return "Пт"
+                    case .saturday: return "Сб"
+                    case .sunday: return "Вс"
+                    }
                 }
+                subtitle = dayAbbreviations.joined(separator: ", ")
             }
-            subtitle = dayAbbreviations.joined(separator: ", ")
         }
         cell.configure(title: title, subtitle: subtitle)
         cell.accessoryType = .disclosureIndicator
@@ -334,6 +345,11 @@ extension AddTrackerViewController: UITableViewDataSource {
         cell.contentView.backgroundColor = .clear
         cell.titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         cell.titleLabel.textColor = UIColor.black
+        if indexPath.row == 1 {
+            cell.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: .greatestFiniteMagnitude)
+        } else {
+            cell.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        }
         return cell
     }
     
@@ -351,6 +367,7 @@ extension AddTrackerViewController: UITableViewDelegate {
             let categoryViewModel = CategoryViewModel(trackerCategoryStore: TrackerCategoryStore())
             let categoryViewController = CategoryViewController(viewModel: categoryViewModel)
             categoryViewController.delegate = self
+            print ("Установили делегата")
             navigationController?.pushViewController(categoryViewController, animated: true)
         } else if indexPath.row == 1 {
             let scheduleViewController = ScheduleViewController()
@@ -363,10 +380,10 @@ extension AddTrackerViewController: UITableViewDelegate {
 }
 
 extension AddTrackerViewController: CategoryViewControllerDelegate {
-    func didSelectCategory(_ category: String) {
-        selectedCategory = category
+    func didSelectCategory(categoryTitle: String) {
+        selectedCategoryTitle = categoryTitle
+        print("Selected category: \(selectedCategoryTitle ?? "None")")
         tableView.reloadData()
-        navigationController?.popViewController(animated: true)
     }
 }
 

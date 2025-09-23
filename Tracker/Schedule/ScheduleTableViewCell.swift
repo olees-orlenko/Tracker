@@ -7,7 +7,7 @@ final class ScheduleTableViewCell: UITableViewCell {
     
     let daySwitch = UISwitch()
     
-    // MARK: - Initializers
+    // MARK: - Init
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)

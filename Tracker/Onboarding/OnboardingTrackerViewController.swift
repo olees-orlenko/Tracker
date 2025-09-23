@@ -12,7 +12,7 @@ final class OnboardingTrackerViewController: UIViewController {
     private let imageName: String
     private let labelText: String
     
-    // MARK: - Initializers
+    // MARK: - Init
     
     init(imageName: String, labelText: String) {
         self.imageName = imageName
@@ -34,7 +34,7 @@ final class OnboardingTrackerViewController: UIViewController {
     }
     
     // MARK: - Setup UI Elements
-
+    
     private func setupImageView() {
         imageView.contentMode = .scaleAspectFill
         imageView.image = UIImage(named: imageName)
