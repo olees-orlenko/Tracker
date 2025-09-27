@@ -202,19 +202,21 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         }
     }
     
-    private func updateCounterLabelText(completedDays: Int){
+    private func updateCounterLabelText(completedDays: Int) {
         let days = completedDays % 100
+        let localizedString: String
         if (11...14).contains(days) {
-            counterLabel.text = "\(completedDays) дней"
+            localizedString = NSLocalizedString("days_plural", comment: "")
         } else {
             switch days % 10 {
             case 1:
-                counterLabel.text = "\(completedDays) день"
+                localizedString = NSLocalizedString("day_singular", comment: "")
             case 2...4:
-                counterLabel.text = "\(completedDays) дня"
+                localizedString = NSLocalizedString("days_few", comment: "")
             default:
-                counterLabel.text = "\(completedDays) дней"
+                localizedString = NSLocalizedString("days_plural", comment: "")
             }
         }
+        counterLabel.text = "\(completedDays) \(localizedString)"
     }
 }
