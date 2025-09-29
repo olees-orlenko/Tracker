@@ -104,7 +104,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     }
     
     private func setupTextLabel() {
-        textLabel.text = "Что будем отслеживать?"
+        textLabel.text = NSLocalizedString("what_to_track", comment: "Text indicating what to track")
         textLabel.textColor = UIColor(resource: .black)
         textLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         textLabel.contentMode = .center
@@ -121,12 +121,12 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     private func setupTitle(){
         navigationController?.navigationBar.prefersLargeTitles = true
-        navigationItem.title = "Трекеры"
+        navigationItem.title = NSLocalizedString("trackers_title", comment: "Title for the Trackers view")
     }
     
     private func setupSearchField() {
         searchField = UISearchController(searchResultsController: nil)
-        searchField?.searchBar.placeholder = "Поиск"
+        searchField?.searchBar.placeholder = NSLocalizedString("search_placeholder", comment: "Placeholder text for the search bar")
         searchField?.searchBar.searchTextField.font = UIFont.systemFont(ofSize: 17, weight: .regular)
         searchField?.searchBar.searchTextField.textColor = UIColor(resource: .gray)
         navigationItem.searchController = searchField

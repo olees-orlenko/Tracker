@@ -27,7 +27,10 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     
     // MARK: - Properties
     
-    let sections = ["Категория", "Расписание"]
+    let sections = [
+        NSLocalizedString("category_section", comment: "Title for the Category section"),
+        NSLocalizedString("schedule_section", comment: "Title for the Schedule section")
+    ]
     var trackerId: UUID!
     var currentDate: Date?
     private var selectedDays: [Week] = []
@@ -84,7 +87,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     private func setupTextErrorLabel(){
         textErrorLabel.textColor = UIColor(resource: .red)
         textErrorLabel.font = .systemFont(ofSize: 17, weight: .regular)
-        textErrorLabel.text = "Ограничение 38 символов"
+        textErrorLabel.text = NSLocalizedString("characters_limit_error", comment: "Error message for exceeding character limit")
         textErrorLabel.isHidden = true
         textErrorLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(textErrorLabel)
@@ -92,11 +95,11 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     
     private func setupTitle(){
         navigationController?.navigationBar.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 16, weight: .medium)]
-        navigationItem.title = "Новая привычка"
+        navigationItem.title = NSLocalizedString("new_habit_title", comment: "Title for the New Habit view")
     }
     
     private func setupNameTrackerTextField() {
-        nameTrackerTextField.placeholder = "Введите название трекера"
+        nameTrackerTextField.placeholder = NSLocalizedString("enter_tracker_name", comment: "Placeholder text for tracker name text field")
         nameTrackerTextField.backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
         nameTrackerTextField.layer.cornerRadius = 16
         nameTrackerTextField.layer.masksToBounds = true
@@ -124,7 +127,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     }
     
     private func setupCancelButton() {
-        cancelButton.setTitle("Отменить", for: .normal)
+        cancelButton.setTitle(NSLocalizedString("cancel_button_title", comment: "Title for the Cancel button"), for: .normal)
         cancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         cancelButton.setTitleColor(.red, for: .normal)
         cancelButton.layer.borderColor = (UIColor(resource: .red)).cgColor
@@ -137,7 +140,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     }
     
     private func setupCreateButton() {
-        createButton.setTitle("Создать", for: .normal)
+        createButton.setTitle(NSLocalizedString("create_button_title", comment: "Title for the Create button"), for: .normal)
         createButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         createButton.setTitleColor(.white, for: .normal)
         createButton.backgroundColor = UIColor(resource: .gray)
@@ -321,17 +324,17 @@ extension AddTrackerViewController: UITableViewDataSource {
             subtitle = selectedCategoryTitle
         } else if indexPath.row == 1 {
             if selectedDays.count == 7 {
-                subtitle = "Каждый день"
+                subtitle = NSLocalizedString("every_day", comment: "Subtitle for schedule when every day is selected")
             } else if !selectedDays.isEmpty {
                 let dayAbbreviations = selectedDays.map { day in
                     switch day {
-                    case .monday: return "Пн"
-                    case .tuesday: return "Вт"
-                    case .wednesday: return "Ср"
-                    case .thursday: return "Чт"
-                    case .friday: return "Пт"
-                    case .saturday: return "Сб"
-                    case .sunday: return "Вс"
+                    case .monday: return NSLocalizedString("monday_abbr", comment: "Abbreviation for Monday")
+                    case .tuesday: return NSLocalizedString("tuesday_abbr", comment: "Abbreviation for Tuesday")
+                    case .wednesday: return NSLocalizedString("wednesday_abbr", comment: "Abbreviation for Wednesday")
+                    case .thursday: return NSLocalizedString("thursday_abbr", comment: "Abbreviation for Thursday")
+                    case .friday: return NSLocalizedString("friday_abbr", comment: "Abbreviation for Friday")
+                    case .saturday: return NSLocalizedString("saturday_abbr", comment: "Abbreviation for Saturday")
+                    case .sunday: return NSLocalizedString("sunday_abbr", comment: "Abbreviation for Sunday")
                     }
                 }
                 subtitle = dayAbbreviations.joined(separator: ", ")
@@ -470,8 +473,7 @@ extension AddTrackerViewController: UICollectionViewDataSource {
             if collectionView == emojisCollectionView {
                 headerView.titleLabel.text = "Emoji"
             } else if collectionView == colorsCollectionView {
-                headerView.titleLabel.text = "Цвет"
-            }
+                headerView.titleLabel.text = NSLocalizedString("color_header", comment: "Header text for the Colors section")            }
             return headerView
         } else {
             return UICollectionReusableView()

@@ -37,7 +37,7 @@ final class AddCategoryViewController: UIViewController {
     // MARK: - Setup UI
     
     private func setupTextField() {
-        textField.placeholder = "Введите название категории"
+        textField.placeholder = NSLocalizedString("category_name_placeholder", comment: "Placeholder text for category name text field")
         textField.backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
         textField.layer.cornerRadius = 16
         textField.layer.masksToBounds = true
@@ -59,7 +59,7 @@ final class AddCategoryViewController: UIViewController {
         doneButton.backgroundColor = .black
         doneButton.layer.cornerRadius = 16
         doneButton.layer.masksToBounds = true
-        doneButton.setTitle("Готово", for: .normal)
+        doneButton.setTitle(NSLocalizedString("done_button_title", comment: "Title for the Done button"), for: .normal)
         doneButton.setTitleColor(.white, for: .normal)
         doneButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         doneButton.addTarget(self, action: #selector(doneButtonTapped), for: .touchUpInside)
@@ -68,7 +68,7 @@ final class AddCategoryViewController: UIViewController {
     }
     
     private func setupView() {
-        navigationItem.title = "Новая категория"
+        navigationItem.title = NSLocalizedString("new_category_title", comment: "Title for the New Category view")
         view.backgroundColor = .white
     }
     

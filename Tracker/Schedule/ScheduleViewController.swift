@@ -30,7 +30,7 @@ final class ScheduleViewController: UIViewController {
     private func setupView() {
         tableView.tableFooterView = UIView()
         view.backgroundColor = .white
-        navigationItem.title = "Расписание"
+        navigationItem.title = NSLocalizedString("schedule_title", comment: "Title for the Schedule view")
         let title: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 16, weight: .medium),
             .foregroundColor: UIColor.black
@@ -53,7 +53,7 @@ final class ScheduleViewController: UIViewController {
     }
     
     private func setupDoneButton() {
-        doneButton.setTitle("Готово", for: .normal)
+        doneButton.setTitle(NSLocalizedString("done_button_title", comment: "Title for the Done button"), for: .normal)
         doneButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         doneButton.setTitleColor(.white, for: .normal)
         doneButton.backgroundColor = UIColor(resource: .black)
@@ -103,7 +103,7 @@ extension ScheduleViewController: UITableViewDataSource {
         let backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
         cell.backgroundColor = backgroundColor
         cell.contentView.backgroundColor = .clear
-        cell.textLabel?.text = day.rawValue
+        cell.textLabel?.text = day.localizedString
         cell.daySwitch.isOn = selectedDays.contains(day)
         cell.daySwitch.tag = indexPath.row
         cell.daySwitch.removeTarget(nil, action: nil, for: .allEvents)

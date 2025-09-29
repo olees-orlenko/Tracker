@@ -55,7 +55,7 @@ final class CategoryViewController: UIViewController{
     
     private func setupView() {
         view.backgroundColor = .white
-        navigationItem.title = "Категория"
+        navigationItem.title = NSLocalizedString("category_title", comment: "Title for the category view")
         let title: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 16, weight: .medium),
             .foregroundColor: UIColor.black
@@ -64,7 +64,7 @@ final class CategoryViewController: UIViewController{
     }
     
     private func setupTextLabel() {
-        textLabel.text = "Привычки и события можно\n объединить по смыслу"
+        textLabel.text = NSLocalizedString("habits_text", comment: "Category view text")
         textLabel.numberOfLines = 2
         textLabel.textColor = UIColor(resource: .black)
         textLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
@@ -96,7 +96,7 @@ final class CategoryViewController: UIViewController{
     }
     
     private func setupDoneButton() {
-        doneButton.setTitle("Добавить категорию", for: .normal)
+        doneButton.setTitle(NSLocalizedString("add_category_button", comment: "Title for Add Category button"), for: .normal)
         doneButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         doneButton.setTitleColor(.white, for: .normal)
         doneButton.backgroundColor = UIColor(resource: .black)
