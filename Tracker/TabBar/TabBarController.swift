@@ -1,9 +1,15 @@
 import UIKit
 
 final class TabBarController: UITabBarController {
-
+    
+    private let colors = Colors()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = .white
+        let tabBarLine = UIView(frame: CGRect(x: 0, y: 0, width: tabBar.frame.width, height: 1))
+        tabBarLine.backgroundColor = colors.tabBarLineColor
+        tabBar.addSubview(tabBarLine)
         let trackerViewController = TrackerViewController()
         trackerViewController.tabBarItem = UITabBarItem(
             title: NSLocalizedString("tab_tracker_title", comment: "Title for the Tracker tab"),

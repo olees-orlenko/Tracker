@@ -22,6 +22,7 @@ final class CategoryViewController: UIViewController{
             updateImageView()
         }
     }
+    private let color = Colors()
     
     // MARK: - Init
     
@@ -54,11 +55,11 @@ final class CategoryViewController: UIViewController{
     // MARK: - Setup UI
     
     private func setupView() {
-        view.backgroundColor = .white
+        view.backgroundColor = color.viewBackgroundColor
         navigationItem.title = NSLocalizedString("category_title", comment: "Title for the category view")
         let title: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 16, weight: .medium),
-            .foregroundColor: UIColor.black
+            .foregroundColor: color.navigationBarTintColor
         ]
         navigationController?.navigationBar.titleTextAttributes = title
     }
@@ -98,8 +99,8 @@ final class CategoryViewController: UIViewController{
     private func setupDoneButton() {
         doneButton.setTitle(NSLocalizedString("add_category_button", comment: "Title for Add Category button"), for: .normal)
         doneButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        doneButton.setTitleColor(.white, for: .normal)
-        doneButton.backgroundColor = UIColor(resource: .black)
+        doneButton.setTitleColor(color.viewBackgroundColor, for: .normal)
+        doneButton.backgroundColor = color.doneButtonBackgroundColor()
         doneButton.layer.cornerRadius = 16
         doneButton.layer.masksToBounds = true
         doneButton.addTarget(self, action: #selector(doneButtonTapped), for: .touchUpInside)

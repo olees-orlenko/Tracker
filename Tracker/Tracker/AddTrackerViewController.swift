@@ -4,6 +4,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     
     weak var delegate: AddTrackerViewControllerDelegate?
     private let cellIdentifier = "cell"
+    private let color = Colors()
     
     // MARK: - UI Elements
     
@@ -81,7 +82,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     // MARK: - Setup UI Elements
     
     private func setupView() {
-        view.backgroundColor = .white
+        view.backgroundColor = color.viewBackgroundColor
     }
     
     private func setupTextErrorLabel(){
@@ -94,7 +95,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     }
     
     private func setupTitle(){
-        navigationController?.navigationBar.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 16, weight: .medium)]
+        navigationController?.navigationBar.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 16, weight: .medium), .foregroundColor: color.navigationBarTintColor]
         navigationItem.title = NSLocalizedString("new_habit_title", comment: "Title for the New Habit view")
     }
     
@@ -110,7 +111,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
         nameTrackerTextField.returnKeyType = .done
         nameTrackerTextField.enablesReturnKeyAutomatically = true
         nameTrackerTextField.smartInsertDeleteType = .no
-        nameTrackerTextField.textColor = UIColor(resource: .black)
+        nameTrackerTextField.textColor = color.trackerTintColor()
         nameTrackerTextField.font = UIFont.systemFont(ofSize: 17, weight: .regular)
         nameTrackerTextField.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(nameTrackerTextField)
@@ -144,6 +145,7 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
         createButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         createButton.setTitleColor(.white, for: .normal)
         createButton.backgroundColor = UIColor(resource: .gray)
+        createButton.backgroundColor = color.createButtonDisabledBackgroundColor()
         createButton.layer.cornerRadius = 16
         createButton.layer.masksToBounds = true
         createButton.addTarget(self, action: #selector(saveButtonTapped), for: .touchUpInside)
@@ -275,11 +277,13 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
         let isColorSelected = selectedColor != nil
         let allFields = isNameValid && isCategorySelected && isScheduleSelected && isEmojiSelected && isColorSelected
         if allFields {
-            createButton.backgroundColor = UIColor(resource: .black)
+            createButton.backgroundColor = color.createButtonEnabledBackgroundColor()
             createButton.isEnabled = true
+            createButton.setTitleColor(color.createButtonEnabledTextColor(), for: .normal)
         } else {
-            createButton.backgroundColor = UIColor(resource: .gray)
+            createButton.backgroundColor = color.createButtonDisabledBackgroundColor()
             createButton.isEnabled = false
+            createButton.setTitleColor(color.createButtonDisabledTextColor(), for: .normal)
         }
     }
     
@@ -347,7 +351,8 @@ extension AddTrackerViewController: UITableViewDataSource {
         cell.backgroundColor = backgroundColor
         cell.contentView.backgroundColor = .clear
         cell.titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
-        cell.titleLabel.textColor = UIColor.black
+        cell.titleLabel.textColor = color.trackerTintColor()
+        tableView.separatorColor = .gray
         if indexPath.row == 1 {
             cell.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: .greatestFiniteMagnitude)
         } else {
@@ -471,8 +476,10 @@ extension AddTrackerViewController: UICollectionViewDataSource {
         if kind == UICollectionView.elementKindSectionHeader {
             let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: EmojiColorHeaderView.reuseIdentifier, for: indexPath) as! EmojiColorHeaderView
             if collectionView == emojisCollectionView {
+                headerView.titleLabel.textColor = color.trackerTintColor()
                 headerView.titleLabel.text = "Emoji"
             } else if collectionView == colorsCollectionView {
+                headerView.titleLabel.textColor = color.trackerTintColor()
                 headerView.titleLabel.text = NSLocalizedString("color_header", comment: "Header text for the Colors section")            }
             return headerView
         } else {

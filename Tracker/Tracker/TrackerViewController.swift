@@ -36,6 +36,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private let trackerStore = TrackerStore()
     private let trackerCategoryStore = TrackerCategoryStore()
     private let trackerRecordStore = TrackerRecordStore()
+    private let colors = Colors()
     
     // MARK: - Init
     
@@ -71,7 +72,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     // MARK: - Setup UI Elements
     
     private func setupView() {
-        view.backgroundColor = UIColor(resource: .white)
+        view.backgroundColor = colors.viewBackgroundColor
         view.contentMode = .scaleToFill
     }
     
@@ -105,7 +106,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     private func setupTextLabel() {
         textLabel.text = NSLocalizedString("what_to_track", comment: "Text indicating what to track")
-        textLabel.textColor = UIColor(resource: .black)
+        textLabel.textColor = colors.trackerTintColor()
         textLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         textLabel.contentMode = .center
         textLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -115,7 +116,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private func setupTrackerButton(){
         let trackerButtonImage = UIImage(named: "add_tracker")
         let addTrackerButton = UIBarButtonItem(image: trackerButtonImage, style: .plain, target: self, action: #selector(addTrackerButtonTapped))
-        addTrackerButton.tintColor = .black
+        addTrackerButton.tintColor = colors.trackerTintColor()
         navigationItem.leftBarButtonItem = addTrackerButton
     }
     

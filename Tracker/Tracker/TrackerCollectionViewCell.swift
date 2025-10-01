@@ -23,6 +23,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     private var currentDate: Date = Date()
     private var isFutureDate: Bool = false
     private var color: UIColor?
+    private let colors = Colors()
     
     // MARK: - Init
     
@@ -74,7 +75,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     
     private func setupCounterLabel() {
         counterLabel.text = "0 дней"
-        counterLabel.textColor = UIColor(resource: .black)
+        counterLabel.textColor = colors.trackerTintColor()
         counterLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         counterLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(counterLabel)
@@ -82,7 +83,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     
     private func setuptTitleLabel() {
         titleLabel.text = "Домашний уют"
-        titleLabel.textColor = UIColor(resource: .black)
+        titleLabel.textColor = colors.trackerTintColor()
         titleLabel.font = UIFont.systemFont(ofSize: 19, weight: .bold)
         titleLabel.contentMode = .left
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
