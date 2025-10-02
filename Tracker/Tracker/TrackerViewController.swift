@@ -45,6 +45,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private let trackerCategoryStore = TrackerCategoryStore()
     private let trackerRecordStore = TrackerRecordStore()
     private let colors = Colors()
+    private let analyticsService = AnalyticsService()
     
     // MARK: - Init
     
@@ -80,6 +81,16 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         filterTrackersForSelectedDate(currentDate)
         self.updateImageView()
         self.updateEmptyTrackerImageView()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        analyticsService.report(event: "open", params: ["screen": "Main"])
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        analyticsService.report(event: "close", params: ["screen": "Main"])
     }
     
     // MARK: - Setup UI Elements
@@ -193,6 +204,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     // MARK: - Actions
     
     @objc private func addTrackerButtonTapped() {
+        analyticsService.report(event: "click", params: ["screen": "Main", "item": "add_track"])
         let addTrackerViewController = AddTrackerViewController()
         addTrackerViewController.delegate = self
         let navigationController = UINavigationController(rootViewController: addTrackerViewController)
@@ -209,9 +221,14 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         filterTrackersForSelectedDate(selectedDate)
     }
     
+    @objc func filterButtonTapped() {
+        analyticsService.report(event: "click", params: ["screen": "Main", "item": "filter"])
+    }
+    
     // MARK: - TrackerCellDelegate
     
     func didTapCompleteButton(trackerId: UUID, at indexPath: IndexPath) {
+        analyticsService.report(event: "click", params: ["screen": "Main", "item": "track"])
         if currentDate <= Date() {
             addTrackerRecord(trackerId: trackerId, date: currentDate)
             collectionView.reloadData()
@@ -219,8 +236,17 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     }
     
     func didTapUnCompleteButton(trackerId: UUID, at indexPath: IndexPath) {
+        analyticsService.report(event: "click", params: ["screen": "Main", "item": "track"])
         self.removeTrackerRecord(trackerId: trackerId, date: self.currentDate)
         collectionView.reloadData()
+    }
+    
+    func didTapEditButton() {
+        analyticsService.report(event: "click", params: ["screen": "Main", "item": "edit"])
+    }
+    
+    func didTapDeleteButton() {
+        analyticsService.report(event: "click", params: ["screen": "Main", "item": "delete"])
     }
     
     // MARK: - Data
