@@ -8,6 +8,8 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private let cellIdentifier = "cell"
     private var imageView = UIImageView()
     private var searchField: UISearchController?
+    private let emptyImageView = UIImageView()
+    private let emptyLabel = UILabel()
     private var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
@@ -25,12 +27,18 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private var visibleCategories: [TrackerCategory] = [] {
         didSet {
             updateImageView()
+            collectionView.reloadData()
         }
     }
     private var filteredTrackers: [Tracker] = [] {
         didSet {
             updateImageView()
             collectionView.reloadData()
+        }
+    }
+    private var searchText: String = "" {
+        didSet {
+            updateVisibleCategories()
         }
     }
     private let trackerStore = TrackerStore()
@@ -60,13 +68,18 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         setupTrackerButton()
         setupTitle()
         setupSearchField()
+        searchField?.searchResultsUpdater = self
         setupImageView()
         setupTextLabel()
+        setupEmptyImageView()
+        setupEmptyLabel()
         setupDatePicker()
         setupConstraints()
         try? trackerStore.fetchedResultsController.performFetch()
-        self.updateImageView()
+        updateVisibleCategories()
         filterTrackersForSelectedDate(currentDate)
+        self.updateImageView()
+        self.updateEmptyTrackerImageView()
     }
     
     // MARK: - Setup UI Elements
@@ -104,6 +117,24 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         imageView.tintColor = UIColor(resource: .black)
     }
     
+    private func setupEmptyImageView() {
+        emptyImageView.translatesAutoresizingMaskIntoConstraints = false
+        emptyImageView.image = UIImage(named: "error")
+        emptyImageView.isHidden = true
+        emptyImageView.contentMode = .scaleAspectFit
+        view.addSubview(emptyImageView)
+    }
+    
+    private func setupEmptyLabel() {
+        emptyLabel.textColor = colors.trackerTintColor()
+        emptyLabel.text = NSLocalizedString("no_trackers", comment: "Text indicating empty search")
+        emptyLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        emptyLabel.contentMode = .center
+        emptyLabel.isHidden = true
+        emptyLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(emptyLabel)
+    }
+    
     private func setupTextLabel() {
         textLabel.text = NSLocalizedString("what_to_track", comment: "Text indicating what to track")
         textLabel.textColor = colors.trackerTintColor()
@@ -127,6 +158,8 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     private func setupSearchField() {
         searchField = UISearchController(searchResultsController: nil)
+        searchField?.searchResultsUpdater = self
+        searchField?.obscuresBackgroundDuringPresentation = false
         searchField?.searchBar.placeholder = NSLocalizedString("search_placeholder", comment: "Placeholder text for the search bar")
         searchField?.searchBar.searchTextField.font = UIFont.systemFont(ofSize: 17, weight: .regular)
         searchField?.searchBar.searchTextField.textColor = UIColor(resource: .gray)
@@ -148,6 +181,12 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            emptyImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            emptyImageView.widthAnchor.constraint(equalToConstant: 80),
+            emptyImageView.heightAnchor.constraint(equalToConstant: 80),
+            emptyLabel.topAnchor.constraint(equalTo: emptyImageView.bottomAnchor, constant: 8),
+            emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
         ])
     }
     
@@ -189,6 +228,13 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private func updateImageView() {
         imageView.isHidden = !filteredTrackers.isEmpty
         textLabel.isHidden = !filteredTrackers.isEmpty
+    }
+    
+    private func updateEmptyTrackerImageView() {
+        imageView.isHidden = true
+        textLabel.isHidden = true
+        emptyImageView.isHidden = !filteredTrackers.isEmpty
+        emptyLabel.isHidden = !filteredTrackers.isEmpty
     }
     
     func addNewTracker(tracker newTracker: Tracker, title categoryTitle: String) {
@@ -264,9 +310,19 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         guard let fetchedObjects = trackerStore.fetchedResultsController.fetchedObjects else {
             self.visibleCategories = []
             self.filteredTrackers = []
+            updateEmptyTrackerImageView()
             return
         }
-        let groupedByCategories = Dictionary(grouping: fetchedObjects) { (trackerCoreData) -> String in
+        let dateFilteredTrackers = fetchedObjects
+        let searchFilteredTrackers = dateFilteredTrackers.filter { trackerCoreData in
+            guard let trackerName = trackerCoreData.name else { return false }
+            if searchText.isEmpty {
+                return true
+            } else {
+                return trackerName.lowercased().contains(searchText.lowercased())
+            }
+        }
+        let groupedByCategories = Dictionary(grouping: searchFilteredTrackers) { (trackerCoreData) -> String in
             return trackerCoreData.category?.title ?? "Без категории"
         }
         for (categoryTitle, trackerCoreDataArray) in groupedByCategories.sorted(by: { $0.key < $1.key }) {
@@ -281,7 +337,12 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         }
         self.visibleCategories = newVisibleCategories
         self.filteredTrackers = newFilteredTrackers
+        updateEmptyTrackerImageView()
         print("Количество категорий после обновления visibleCategories: \(visibleCategories.count)")
+    }
+    
+    private func filterTrackers(with searchText: String) {
+        self.searchText = searchText
     }
 }
 
@@ -348,5 +409,14 @@ extension TrackerViewController: TrackerStoreDelegate {
 extension TrackerViewController: TrackerRecordStoreDelegate {
     func trackerRecordStoreDidUpdateRecords(_ store: TrackerRecordStore) {
         collectionView.reloadData()
+    }
+}
+
+extension TrackerViewController: UISearchResultsUpdating {
+    func updateSearchResults(for searchController: UISearchController) {
+        let currentSearchText = searchController.searchBar.text ?? ""
+        if self.searchText != currentSearchText {
+            self.searchText = currentSearchText
+        }
     }
 }
