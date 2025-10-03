@@ -41,3 +41,9 @@
 "saturday" = "Суббота";
 "sunday" = "Воскресенье";
 "no_trackers" = "Ничего не найдено";
+"no_statistics" = "Анализировать пока нечего";
+"statistics_title" = "Статистика";
+"best_period" = "Лучший период";
+"perfect_days" = "Идеальные дни";
+"completed_trackers" = "Трекеров завершено";
+"average_value" = "Среднее значение";

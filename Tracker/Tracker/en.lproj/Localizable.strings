@@ -41,3 +41,9 @@
 "saturday" = "Saturday";
 "sunday" = "Sunday";
 "no_trackers" = "No trackers found";
+"no_statistics" = "Nothing to analyze yet";
+"statistics_title" = "Statistics";
+"best_period" = "Best period";
+"perfect_days" = "Perfect days";
+"completed_trackers" = "Trackers completed";
+"average_value" = "Average value";

@@ -26,13 +26,13 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     private var visibleCategories: [TrackerCategory] = [] {
         didSet {
-            updateImageView()
+            updateEmptyState()
             collectionView.reloadData()
         }
     }
     private var filteredTrackers: [Tracker] = [] {
         didSet {
-            updateImageView()
+            updateEmptyState()
             collectionView.reloadData()
         }
     }
@@ -79,8 +79,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         try? trackerStore.fetchedResultsController.performFetch()
         updateVisibleCategories()
         filterTrackersForSelectedDate(currentDate)
-        self.updateImageView()
-        self.updateEmptyTrackerImageView()
+        self.updateEmptyState()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -251,16 +250,34 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     // MARK: - Data
     
-    private func updateImageView() {
-        imageView.isHidden = !filteredTrackers.isEmpty
-        textLabel.isHidden = !filteredTrackers.isEmpty
-    }
-    
-    private func updateEmptyTrackerImageView() {
-        imageView.isHidden = true
-        textLabel.isHidden = true
-        emptyImageView.isHidden = !filteredTrackers.isEmpty
-        emptyLabel.isHidden = !filteredTrackers.isEmpty
+    private func updateEmptyState() {
+        let hasFiltered = !filteredTrackers.isEmpty
+        let hasAnyTrackers = (trackerStore.fetchedResultsController.fetchedObjects?.isEmpty == false)
+        if hasFiltered {
+            imageView.isHidden = true
+            textLabel.isHidden = true
+            emptyImageView.isHidden = true
+            emptyLabel.isHidden = true
+            return
+        }
+        if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            imageView.isHidden = true
+            textLabel.isHidden = true
+            emptyImageView.isHidden = false
+            emptyLabel.isHidden = false
+            return
+        }
+        if !hasAnyTrackers {
+            emptyImageView.isHidden = true
+            emptyLabel.isHidden = true
+            imageView.isHidden = false
+            textLabel.isHidden = false
+        } else {
+            imageView.isHidden = true
+            textLabel.isHidden = true
+            emptyImageView.isHidden = true
+            emptyLabel.isHidden = true
+        }
     }
     
     func addNewTracker(tracker newTracker: Tracker, title categoryTitle: String) {
@@ -282,7 +299,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             print("Ошибка при создании трекера: \(error)")
             return
         }
-        self.updateImageView()
+        self.updateEmptyState()
     }
     
     func addTrackerRecord(trackerId: UUID, date: Date) {
@@ -336,7 +353,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         guard let fetchedObjects = trackerStore.fetchedResultsController.fetchedObjects else {
             self.visibleCategories = []
             self.filteredTrackers = []
-            updateEmptyTrackerImageView()
+            updateEmptyState()
             return
         }
         let dateFilteredTrackers = fetchedObjects
@@ -363,7 +380,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         }
         self.visibleCategories = newVisibleCategories
         self.filteredTrackers = newFilteredTrackers
-        updateEmptyTrackerImageView()
+        updateEmptyState()
         print("Количество категорий после обновления visibleCategories: \(visibleCategories.count)")
     }
     

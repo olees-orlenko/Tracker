@@ -91,4 +91,26 @@ final class TrackerRecordStore: NSObject {
             throw TrackerRecordStoreError.fetchFailed(error)
         }
     }
+    
+    func fetchCompletedTrackers() throws -> Int {
+        var result = 0
+        try context.performAndWait {
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = TrackerRecordCoreData.fetchRequest()
+            fetchRequest.resultType = .countResultType
+            result = try context.count(for: fetchRequest)
+        }
+        return result
+    }
+    
+    func fetchPerfectDaysCount() throws -> Int {
+        return 0
+    }
+    
+    func fetchBestPeriod() throws -> Int {
+        return 0
+    }
+    
+    func fetchAverageValue() throws -> Int {
+        return 0
+    }
 }
