@@ -3,6 +3,7 @@ import CoreData
 
 enum TrackerStoreError: Error {
     case decodingErrorInvalidTracker
+    case trackerNotFound
 }
 
 struct TrackerStoreUpdate {
@@ -78,6 +79,24 @@ final class TrackerStore: NSObject {
         )
     }
     
+    func tracker(by id: UUID) throws -> Tracker {
+        var result: Tracker?
+        var errorResult: Error?
+        context.performAndWait {
+            do {
+                guard let core = try fetchTracker(withId: id) else {
+                    errorResult = TrackerStoreError.trackerNotFound
+                    return
+                }
+                result = try tracker(from: core)
+            } catch {
+                errorResult = error
+            }
+        }
+        if let error = errorResult { throw error }
+        return result!
+    }
+    
     func createTracker(_ tracker: Tracker, category: TrackerCategoryCoreData) throws {
         let trackerCoreData = TrackerCoreData(context: context)
         trackerCoreData.id = tracker.id
@@ -98,6 +117,60 @@ final class TrackerStore: NSObject {
         } catch {
             throw error
         }
+    }
+    
+    func deleteTracker(_ tracker: Tracker) throws {
+        let fetchRequest: NSFetchRequest<TrackerCoreData> = TrackerCoreData.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", tracker.id as CVarArg)
+        if let result = try context.fetch(fetchRequest).first {
+            context.delete(result)
+            try context.save()
+        } else {
+            throw TrackerStoreError.trackerNotFound
+        }
+    }
+    
+    func updateTracker(_ tracker: Tracker, categoryTitle: String?) throws {
+        var thrownError: Error?
+        context.performAndWait {
+            do {
+                let fetchRequest: NSFetchRequest<TrackerCoreData> = TrackerCoreData.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "id == %@", tracker.id as CVarArg)
+                fetchRequest.fetchLimit = 1
+                let results = try context.fetch(fetchRequest)
+                guard let core = results.first else {
+                    thrownError = TrackerStoreError.trackerNotFound
+                    return
+                }
+                core.name = tracker.name
+                core.emoji = tracker.emoji
+                core.color = uiColorMarshalling.hexString(from: tracker.color)
+                core.schedule = Week.changeScheduleValue(for: tracker.schedule)
+                if let categoryTitle {
+                    let categoryCore = try fetchOrCreateCategory(withTitle: categoryTitle, in: context)
+                    core.category = categoryCore
+                } else {
+                    core.category = nil
+                }
+                try context.save()
+            } catch {
+                thrownError = error
+            }
+        }
+        if let e = thrownError { throw e }
+    }
+    
+    private func fetchOrCreateCategory(withTitle title: String, in context: NSManagedObjectContext) throws -> TrackerCategoryCoreData {
+        let fetchRequest: NSFetchRequest<TrackerCategoryCoreData> = TrackerCategoryCoreData.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "title == %@", title)
+        fetchRequest.fetchLimit = 1
+        let results = try context.fetch(fetchRequest)
+        if let existing = results.first {
+            return existing
+        }
+        let newCategory = TrackerCategoryCoreData(context: context)
+        newCategory.title = title
+        return newCategory
     }
 }
 

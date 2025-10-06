@@ -47,3 +47,7 @@
 "perfect_days" = "Идеальные дни";
 "completed_trackers" = "Трекеров завершено";
 "average_value" = "Среднее значение";
+"editTracker_title" = "Редактировать";
+"deleteTracker_title" = "Удалить";
+"deleteTrackerAlert" = "Уверены что хотите удалить трекер?";
+"edit_habit_title" = "Редактирование привычки";

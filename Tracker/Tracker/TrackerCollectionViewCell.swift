@@ -24,12 +24,16 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     private var isFutureDate: Bool = false
     private var color: UIColor?
     private let colors = Colors()
+    private var isCompleted: Bool = false
+    private var trackerEmoji: String?
+    private var trackerSchedule: [Week]?
     
     // MARK: - Init
     
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupCardView()
+        setupInteraction()
         setupCounterLabel()
         setupEmojiLabel()
         setupTextLabel()
@@ -52,6 +56,11 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         contentView.addSubview(cardView)
     }
     
+    private func setupInteraction() {
+        let interaction = UIContextMenuInteraction(delegate: self)
+        cardView.addInteraction(interaction)
+    }
+    
     private func setupTextLabel() {
         textLabel.text = "Поливать растения"
         textLabel.numberOfLines = 0
@@ -59,7 +68,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         textLabel.textColor = UIColor(resource: .white)
         textLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         textLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(textLabel)
+        cardView.addSubview(textLabel)
     }
     
     private func setupEmojiLabel() {
@@ -70,7 +79,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         emojiLabel.layer.cornerRadius = 12
         emojiLabel.layer.masksToBounds = true
         emojiLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(emojiLabel)
+        cardView.addSubview(emojiLabel)
     }
     
     private func setupCounterLabel() {
@@ -156,12 +165,20 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         addButton.isSelected = newIsCompleted
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        indexPath = nil
+        trackerID = nil
+        isCompleted = false
+    }
+    
     // MARK: - Configuration
     
     func configure(isCompleted: Bool, trackerID: UUID, trackerName: String, indexPath: IndexPath, categoryTitle: String, completedDays: Int, currentDate: Date, color: UIColor, emoji: String) {
         self.trackerID = trackerID
         self.textLabel.text = trackerName
         self.indexPath = indexPath
+        self.isCompleted = isCompleted
         self.categoryTitle = categoryTitle
         self.completedDays = completedDays
         self.currentDate = currentDate
@@ -219,5 +236,34 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
             }
         }
         counterLabel.text = "\(completedDays) \(localizedString)"
+    }
+}
+
+extension TrackerCollectionViewCell: UIContextMenuInteractionDelegate {
+    func contextMenuInteraction(_ interaction: UIContextMenuInteraction,
+                                configurationForMenuAtLocation location: CGPoint) -> UIContextMenuConfiguration? {
+        print("contextMenuInteraction called for cell: indexPath=\(String(describing: indexPath)), trackerID=\(String(describing: trackerID)), isCompleted=\(String(describing: isCompleted))")
+        guard let indexPath = indexPath,
+              let trackerID = trackerID else {
+            return nil
+        }
+        let completed = self.isCompleted ?? false
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+            guard let self = self else { return nil }
+            let edit = UIAction(title: NSLocalizedString("editTracker_title", comment: "")) { _ in
+                guard let trackerID = self.trackerID,
+                      let indexPath = self.indexPath else {
+                    return
+                }
+                self.delegate?.didTapEditButton(trackerId: trackerID, at: indexPath)
+            }
+            let delete = UIAction(title: NSLocalizedString("deleteTracker_title", comment: ""),
+                                  image: nil,
+                                  attributes: .destructive) { _ in
+                let tracker = Tracker(id: trackerID, name: "", color: .clear, emoji: "", schedule: [])
+                self.delegate?.didTapDeleteButton(tracker: tracker)
+            }
+            return UIMenu(title: "", children: [edit, delete])
+        }
     }
 }

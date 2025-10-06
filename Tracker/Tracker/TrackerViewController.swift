@@ -240,12 +240,53 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         collectionView.reloadData()
     }
     
-    func didTapEditButton() {
+    func didTapEditButton(trackerId: UUID, at indexPath: IndexPath) {
         analyticsService.report(event: "click", params: ["screen": "Main", "item": "edit"])
+        let tracker: Tracker
+        do {
+            tracker = try trackerStore.tracker(by: trackerId)
+        } catch {
+            print("Failed to fetch tracker for edit: \(error)")
+            return
+        }
+        let categoryTitle = visibleCategories[indexPath.section].title
+        let editCategoryViewController = AddTrackerViewController()
+        editCategoryViewController.mode = .edit(tracker, categoryTitle)
+        editCategoryViewController.onSave = { [weak self] updatedTracker, categoryTitle in
+            guard let self = self else { return }
+            do {
+                try self.trackerStore.updateTracker(updatedTracker, categoryTitle: categoryTitle)
+                self.updateVisibleCategories()
+                DispatchQueue.main.async {
+                    self.collectionView.reloadItems(at: [indexPath])
+                }
+            } catch {
+                print("Failed to update tracker: \(error)")
+            }
+        }
+        let navigationController = UINavigationController(rootViewController: editCategoryViewController)
+        present(navigationController, animated: true)
     }
     
-    func didTapDeleteButton() {
+    func didTapDeleteButton(tracker: Tracker) {
         analyticsService.report(event: "click", params: ["screen": "Main", "item": "delete"])
+        let actionAlert: UIAlertController = {
+            let alert = UIAlertController()
+            alert.title = NSLocalizedString("deleteTrackerAlert", comment: "")
+            return alert
+        }()
+        let action1 = UIAlertAction(title: NSLocalizedString("deleteTracker_title", comment: ""), style: .destructive) { [weak self] _ in
+            do {
+                try self?.trackerStore.deleteTracker(tracker)
+                self?.collectionView.reloadData()
+            } catch {
+                print("Failed to delete tracker: \(error)")
+            }
+        }
+        let action2 = UIAlertAction(title: NSLocalizedString("cancel_button_title", comment: ""), style: .cancel)
+        actionAlert.addAction(action1)
+        actionAlert.addAction(action2)
+        present(actionAlert, animated: true)
     }
     
     // MARK: - Data
@@ -300,6 +341,14 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             return
         }
         self.updateEmptyState()
+    }
+    
+    func updateTracker(_ tracker: Tracker, categoryTitle: String?) {
+        do {
+            try trackerStore.updateTracker(tracker, categoryTitle: categoryTitle)
+        } catch {
+            print("Ошибка при обновлении трекера: \(error)")
+        }
     }
     
     func addTrackerRecord(trackerId: UUID, date: Date) {

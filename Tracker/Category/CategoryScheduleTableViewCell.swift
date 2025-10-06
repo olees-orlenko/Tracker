@@ -45,9 +45,9 @@ final class CategoryScheduleTableViewCell: UITableViewCell {
         NSLayoutConstraint.activate([
             titleLabel.heightAnchor.constraint(equalToConstant: 18),
             titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 28),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
-            subtitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 28),
+            subtitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             subtitleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -14),
             subtitleLabel.heightAnchor.constraint(equalToConstant: 22)
         ])
