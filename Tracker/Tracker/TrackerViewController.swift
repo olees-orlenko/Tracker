@@ -7,7 +7,8 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private let textLabel = UILabel()
     private let cellIdentifier = "cell"
     private var imageView = UIImageView()
-    private var searchField: UISearchController?
+    private var searchField: UISearchTextField!
+    private let cancelButton = UIButton(type: .system)
     private let emptyImageView = UIImageView()
     private let emptyLabel = UILabel()
     private let filtersButton = UIButton()
@@ -37,9 +38,12 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             collectionView.reloadData()
         }
     }
+    private var searchFieldTrailingConstraintWhenCancelHidden: NSLayoutConstraint!
+    private var searchFieldTrailingConstraintWhenCancelVisible: NSLayoutConstraint!
     private var searchText: String = "" {
         didSet {
             updateVisibleCategories()
+            updateEmptyState()
         }
     }
     private var currentFilter: String? = NSLocalizedString("all_trackers", comment: "")
@@ -71,7 +75,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         setupTrackerButton()
         setupTitle()
         setupSearchField()
-        searchField?.searchResultsUpdater = self
+        setupCancelButton()
         setupImageView()
         setupTextLabel()
         setupEmptyImageView()
@@ -180,21 +184,41 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.title = NSLocalizedString("trackers_title", comment: "Title for the Trackers view")
     }
-    
+
     private func setupSearchField() {
-        searchField = UISearchController(searchResultsController: nil)
-        searchField?.searchResultsUpdater = self
-        searchField?.obscuresBackgroundDuringPresentation = false
-        searchField?.searchBar.placeholder = NSLocalizedString("search_placeholder", comment: "Placeholder text for the search bar")
-        searchField?.searchBar.searchTextField.font = UIFont.systemFont(ofSize: 17, weight: .regular)
-        searchField?.searchBar.searchTextField.textColor = UIColor(resource: .gray)
-        navigationItem.searchController = searchField
+        searchField = UISearchTextField()
+        searchField.placeholder = NSLocalizedString("search_placeholder", comment: "Placeholder text for the search bar")
+        searchField.backgroundColor = UIColor(resource: .gray1)
+        searchField.font = UIFont.systemFont(ofSize: 17, weight: .regular)
+        searchField.translatesAutoresizingMaskIntoConstraints = false
+        searchField.clearButtonMode = .never
+        view.addSubview(searchField)
+        searchField.addTarget(self, action: #selector(searchTextFieldDidChange), for: .editingChanged)
+        
     }
     
+    private func setupCancelButton() {
+        cancelButton.isHidden = true
+        cancelButton.translatesAutoresizingMaskIntoConstraints = false
+        cancelButton.setTitle(NSLocalizedString("cancel_button_title", comment: "Title for the Cancel button"), for: .normal)
+        cancelButton.addTarget(self, action: #selector(cancelButtonTapped), for: .touchUpInside)
+        cancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .regular)
+        cancelButton.contentHorizontalAlignment = .right
+        view.addSubview(cancelButton)
+    }
+
     // MARK: - Constraints
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
+            searchField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 7),
+            searchField.heightAnchor.constraint(equalToConstant: 36),
+            searchField.widthAnchor.constraint(equalToConstant: 255),
+            searchField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            cancelButton.centerYAnchor.constraint(equalTo: searchField.centerYAnchor),
+            cancelButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            cancelButton.leadingAnchor.constraint(equalTo: searchField.trailingAnchor, constant: 5),
+            cancelButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 83),
             imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             imageView.widthAnchor.constraint(equalToConstant: 80),
             imageView.heightAnchor.constraint(equalToConstant: 80),
@@ -202,7 +226,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             textLabel.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
             textLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
             textLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            collectionView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 10),
             collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -217,6 +241,8 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             filtersButton.heightAnchor.constraint(equalToConstant: 50),
             filtersButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16)
         ])
+        searchFieldTrailingConstraintWhenCancelHidden = searchField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16)
+        searchFieldTrailingConstraintWhenCancelHidden.isActive = true
         view.bringSubviewToFront(filtersButton)
         collectionView.contentInset.bottom = 82
     }
@@ -241,7 +267,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         updateFilteringForCurrentFilterAndDate()
     }
     
-    @objc func filterButtonTapped() {
+    @objc private func filterButtonTapped() {
         analyticsService.report(event: "click", params: ["screen": "Main", "item": "filter"])
         let viewController = FiltersViewController()
         viewController.delegate = self
@@ -252,6 +278,26 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         }
         self.present(viewController, animated: true, completion: nil)
     }
+    
+    @objc private func cancelButtonTapped() {
+        searchField.text = ""
+        self.searchText = ""
+        searchField.resignFirstResponder()
+        cancelButton.isHidden = true
+        updateSearchFieldConstraints(showCancelButton: false)
+        }
+    
+    @objc private func searchTextFieldDidChange(_ textField: UISearchTextField) {
+            let currentSearchText = textField.text ?? ""
+            let shouldShowCancelButton = !currentSearchText.isEmpty
+            if cancelButton.isHidden == shouldShowCancelButton {
+                cancelButton.isHidden = !shouldShowCancelButton
+                updateSearchFieldConstraints(showCancelButton: shouldShowCancelButton)
+            }
+            if self.searchText != currentSearchText {
+                self.searchText = currentSearchText
+            }
+        }
     
     // MARK: - TrackerCellDelegate
     
@@ -323,7 +369,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private func updateEmptyState() {
         let hasAnyTrackers = (trackerStore.fetchedResultsController.fetchedObjects?.isEmpty == false)
         let hasVisibleTrackers = !visibleCategories.isEmpty && visibleCategories.contains(where: { !$0.trackers.isEmpty })
-        let isSearching = !(searchField?.searchBar.text?.isEmpty ?? true)
+        let isSearching = !(searchField.text?.isEmpty ?? true)
         imageView.isHidden = true
         textLabel.isHidden = true
         emptyImageView.isHidden = true
@@ -461,6 +507,17 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private func filterNotCompletedTrackers(_ categories: [TrackerCategory]) -> [TrackerCategory] {
         return filterTrackers(categories, completed: false)
     }
+    
+    private func updateSearchFieldConstraints(showCancelButton: Bool) {
+            if showCancelButton {
+                searchFieldTrailingConstraintWhenCancelHidden.isActive = false
+            } else {
+                searchFieldTrailingConstraintWhenCancelHidden.isActive = true
+            }
+            UIView.animate(withDuration: 0.3) {
+                self.view.layoutIfNeeded()
+            }
+        }
 }
 
 // MARK: - CollectionView Delegate and DataSource
@@ -526,15 +583,6 @@ extension TrackerViewController: TrackerStoreDelegate {
 extension TrackerViewController: TrackerRecordStoreDelegate {
     func trackerRecordStoreDidUpdateRecords(_ store: TrackerRecordStore) {
         collectionView.reloadData()
-    }
-}
-
-extension TrackerViewController: UISearchResultsUpdating {
-    func updateSearchResults(for searchController: UISearchController) {
-        let currentSearchText = searchController.searchBar.text ?? ""
-        if self.searchText != currentSearchText {
-            self.searchText = currentSearchText
-        }
     }
 }
 
@@ -614,5 +662,17 @@ extension TrackerViewController: FiltersViewControllerDelegate {
     func didDeselectFilter() {
         currentFilter = NSLocalizedString("all_trackers", comment: "")
         updateFilteringForCurrentFilterAndDate()
+    }
+}
+
+extension TrackerViewController: UITextFieldDelegate {
+    func textFieldDidChangeSelection(_ textField: UITextField) {
+        guard let text = textField.text else { return }
+        filterTrackers(with: text)
+    }
+
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
     }
 }
