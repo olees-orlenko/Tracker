@@ -184,7 +184,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.title = NSLocalizedString("trackers_title", comment: "Title for the Trackers view")
     }
-
+    
     private func setupSearchField() {
         searchField = UISearchTextField()
         searchField.placeholder = NSLocalizedString("search_placeholder", comment: "Placeholder text for the search bar")
@@ -206,7 +206,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         cancelButton.contentHorizontalAlignment = .right
         view.addSubview(cancelButton)
     }
-
+    
     // MARK: - Constraints
     
     private func setupConstraints() {
@@ -285,19 +285,19 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         searchField.resignFirstResponder()
         cancelButton.isHidden = true
         updateSearchFieldConstraints(showCancelButton: false)
-        }
+    }
     
     @objc private func searchTextFieldDidChange(_ textField: UISearchTextField) {
-            let currentSearchText = textField.text ?? ""
-            let shouldShowCancelButton = !currentSearchText.isEmpty
-            if cancelButton.isHidden == shouldShowCancelButton {
-                cancelButton.isHidden = !shouldShowCancelButton
-                updateSearchFieldConstraints(showCancelButton: shouldShowCancelButton)
-            }
-            if self.searchText != currentSearchText {
-                self.searchText = currentSearchText
-            }
+        let currentSearchText = textField.text ?? ""
+        let shouldShowCancelButton = !currentSearchText.isEmpty
+        if cancelButton.isHidden == shouldShowCancelButton {
+            cancelButton.isHidden = !shouldShowCancelButton
+            updateSearchFieldConstraints(showCancelButton: shouldShowCancelButton)
         }
+        if self.searchText != currentSearchText {
+            self.searchText = currentSearchText
+        }
+    }
     
     // MARK: - TrackerCellDelegate
     
@@ -365,7 +365,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     }
     
     // MARK: - Data
-
+    
     private func updateEmptyState() {
         let hasAnyTrackers = (trackerStore.fetchedResultsController.fetchedObjects?.isEmpty == false)
         let hasVisibleTrackers = !visibleCategories.isEmpty && visibleCategories.contains(where: { !$0.trackers.isEmpty })
@@ -509,15 +509,15 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     }
     
     private func updateSearchFieldConstraints(showCancelButton: Bool) {
-            if showCancelButton {
-                searchFieldTrailingConstraintWhenCancelHidden.isActive = false
-            } else {
-                searchFieldTrailingConstraintWhenCancelHidden.isActive = true
-            }
-            UIView.animate(withDuration: 0.3) {
-                self.view.layoutIfNeeded()
-            }
+        if showCancelButton {
+            searchFieldTrailingConstraintWhenCancelHidden.isActive = false
+        } else {
+            searchFieldTrailingConstraintWhenCancelHidden.isActive = true
         }
+        UIView.animate(withDuration: 0.3) {
+            self.view.layoutIfNeeded()
+        }
+    }
 }
 
 // MARK: - CollectionView Delegate and DataSource
@@ -599,7 +599,7 @@ extension TrackerViewController: FiltersViewControllerDelegate {
         let bit = selectedWeekDay.bitValue
         return NSPredicate(format: "schedule & %d != 0", 1 << bit)
     }
-
+    
     private func applyFetchPredicate(_ predicate: NSPredicate?) {
         let fetchRequest = trackerStore.fetchedResultsController.fetchRequest
         fetchRequest.predicate = predicate
@@ -670,7 +670,7 @@ extension TrackerViewController: UITextFieldDelegate {
         guard let text = textField.text else { return }
         filterTrackers(with: text)
     }
-
+    
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
         return true
