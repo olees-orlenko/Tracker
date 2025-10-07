@@ -81,7 +81,9 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         setupConstraints()
         try? trackerStore.fetchedResultsController.performFetch()
         updateVisibleCategories()
-        filterTrackersForSelectedDate(currentDate)
+        let todayKey = NSLocalizedString("trackers_for_today", comment: "")
+        currentFilter = todayKey
+        updateFilteringForCurrentFilterAndDate()
         self.updateEmptyState()
     }
     
@@ -236,7 +238,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         dateFormatter.dateFormat = "dd.MM.yy"
         let formattedDate = dateFormatter.string(from: selectedDate)
         print("Выбранная дата: \(formattedDate)")
-        filterTrackersForSelectedDate(selectedDate)
+        updateFilteringForCurrentFilterAndDate()
     }
     
     @objc func filterButtonTapped() {
@@ -244,7 +246,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         let viewController = FiltersViewController()
         viewController.delegate = self
         if let currentFilter {
-            if currentFilter == NSLocalizedString("completed", comment: "") || currentFilter == NSLocalizedString("uncompleted", comment: "") || currentFilter == NSLocalizedString("trackers_for_today", comment: "") {
+            if currentFilter == NSLocalizedString("completed", comment: "") || currentFilter == NSLocalizedString("uncompleted", comment: ""){
                 viewController.currentFilter = currentFilter
             }
         }
@@ -317,36 +319,30 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     }
     
     // MARK: - Data
-    
+
     private func updateEmptyState() {
-        let hasFiltered = !filteredTrackers.isEmpty
         let hasAnyTrackers = (trackerStore.fetchedResultsController.fetchedObjects?.isEmpty == false)
-        if hasFiltered {
-            imageView.isHidden = true
-            textLabel.isHidden = true
-            emptyImageView.isHidden = true
-            emptyLabel.isHidden = true
+        let hasVisibleTrackers = !visibleCategories.isEmpty && visibleCategories.contains(where: { !$0.trackers.isEmpty })
+        let isSearching = !(searchField?.searchBar.text?.isEmpty ?? true)
+        imageView.isHidden = true
+        textLabel.isHidden = true
+        emptyImageView.isHidden = true
+        emptyLabel.isHidden = true
+        if !hasAnyTrackers || (isSearching && !hasVisibleTrackers) {
+            filtersButton.isHidden = true
+        } else {
+            filtersButton.isHidden = false
+        }
+        if hasVisibleTrackers {
             return
         }
-        if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            imageView.isHidden = true
-            textLabel.isHidden = true
+        if hasAnyTrackers {
             emptyImageView.isHidden = false
             emptyLabel.isHidden = false
-            return
-        }
-        if !hasAnyTrackers {
-            emptyImageView.isHidden = true
-            emptyLabel.isHidden = true
+        } else {
             imageView.isHidden = false
             textLabel.isHidden = false
-        } else {
-            imageView.isHidden = true
-            textLabel.isHidden = true
-            emptyImageView.isHidden = true
-            emptyLabel.isHidden = true
         }
-        filtersButton.isHidden = !hasAnyTrackers
     }
     
     func addNewTracker(tracker newTracker: Tracker, title categoryTitle: String) {
@@ -401,11 +397,6 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         } else {
             addTrackerRecord(trackerId: trackerId, date: date)
         }
-    }
-    
-    private func filterTrackersForSelectedDate(_ date: Date) {
-        applyFetchPredicate(schedulePredicate(for: date))
-        print("Количество трекеров после фильтрации: \(trackerStore.fetchedResultsController.fetchedObjects?.count ?? 0)")
     }
     
     private func updateVisibleCategories() {
@@ -560,7 +551,7 @@ extension TrackerViewController: FiltersViewControllerDelegate {
         let bit = selectedWeekDay.bitValue
         return NSPredicate(format: "schedule & %d != 0", 1 << bit)
     }
-    
+
     private func applyFetchPredicate(_ predicate: NSPredicate?) {
         let fetchRequest = trackerStore.fetchedResultsController.fetchRequest
         fetchRequest.predicate = predicate
@@ -578,37 +569,50 @@ extension TrackerViewController: FiltersViewControllerDelegate {
         visibleCategories = filterTrackers(visibleCategories, completed: showCompleted)
     }
     
-    func didSelectFilter(_ filter: String) {
-        currentFilter = filter
+    private func updateFilteringForCurrentFilterAndDate() {
         let allKey = NSLocalizedString("all_trackers", comment: "")
         let todayKey = NSLocalizedString("trackers_for_today", comment: "")
         let completedKey = NSLocalizedString("completed", comment: "")
         let uncompletedKey = NSLocalizedString("uncompleted", comment: "")
-        switch filter {
-        case allKey:
-            applyFetchPredicate(nil)
-        case todayKey:
-            currentDate = Date()
-            applyFetchPredicate(schedulePredicate(for: currentDate))
+        var coreDataPredicate: NSPredicate? = nil
+        if currentFilter != allKey {
+            coreDataPredicate = schedulePredicate(for: currentDate)
+        }
+        applyFetchPredicate(coreDataPredicate)
+        switch currentFilter {
         case completedKey:
-            applyFetchPredicate(schedulePredicate(for: currentDate))
             applyCompletedFilter(true)
         case uncompletedKey:
-            applyFetchPredicate(schedulePredicate(for: currentDate))
             applyCompletedFilter(false)
+        case nil, allKey, todayKey:
+            break
         default:
-            applyFetchPredicate(nil)
+            break
         }
         collectionView.reloadData()
-        dismiss(animated: true)
         updateEmptyState()
+    }
+    
+    func didSelectFilter(_ filter: String) {
+        currentFilter = filter
+        if filter == NSLocalizedString("trackers_for_today", comment: "") {
+            currentDate = Date()
+        }
+        updateFilteringForCurrentFilterAndDate()
+        dismiss(animated: true)
+    }
+    
+    func calendarDidSelectDate(_ date: Date) {
+        dateDidChange(to: date)
+    }
+    
+    private func dateDidChange(to newDate: Date) {
+        currentDate = newDate
+        updateFilteringForCurrentFilterAndDate()
     }
     
     func didDeselectFilter() {
         currentFilter = NSLocalizedString("all_trackers", comment: "")
-        applyFetchPredicate(nil)
-        collectionView.reloadData()
-        dismiss(animated: true)
-        updateEmptyState()
+        updateFilteringForCurrentFilterAndDate()
     }
 }
