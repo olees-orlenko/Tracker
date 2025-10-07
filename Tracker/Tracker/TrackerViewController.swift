@@ -10,6 +10,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private var searchField: UISearchController?
     private let emptyImageView = UIImageView()
     private let emptyLabel = UILabel()
+    private let filtersButton = UIButton()
     private var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
@@ -41,6 +42,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             updateVisibleCategories()
         }
     }
+    private var currentFilter: String?
     private let trackerStore = TrackerStore()
     private let trackerCategoryStore = TrackerCategoryStore()
     private let trackerRecordStore = TrackerRecordStore()
@@ -75,6 +77,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         setupEmptyImageView()
         setupEmptyLabel()
         setupDatePicker()
+        setupFiltersButton()
         setupConstraints()
         try? trackerStore.fetchedResultsController.performFetch()
         updateVisibleCategories()
@@ -97,6 +100,16 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private func setupView() {
         view.backgroundColor = colors.viewBackgroundColor
         view.contentMode = .scaleToFill
+    }
+    
+    private func setupFiltersButton() {
+        filtersButton.translatesAutoresizingMaskIntoConstraints = false
+        filtersButton.backgroundColor = UIColor(resource: .blue)
+        filtersButton.setTitle(NSLocalizedString("filtersButton_title", comment: ""), for: .normal)
+        filtersButton.titleLabel?.font = .systemFont(ofSize: 17)
+        filtersButton.layer.cornerRadius = 16
+        filtersButton.addTarget(self, action: #selector(filterButtonTapped), for: .touchUpInside)
+        view.addSubview(filtersButton)
     }
     
     private func setupCollectionView() {
@@ -197,7 +210,13 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             emptyImageView.heightAnchor.constraint(equalToConstant: 80),
             emptyLabel.topAnchor.constraint(equalTo: emptyImageView.bottomAnchor, constant: 8),
             emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            filtersButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            filtersButton.widthAnchor.constraint(equalToConstant: 114),
+            filtersButton.heightAnchor.constraint(equalToConstant: 50),
+            filtersButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16)
         ])
+        view.bringSubviewToFront(filtersButton)
+        collectionView.contentInset.bottom = 82
     }
     
     // MARK: - Actions
@@ -222,6 +241,14 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     
     @objc func filterButtonTapped() {
         analyticsService.report(event: "click", params: ["screen": "Main", "item": "filter"])
+        let viewController = FiltersViewController()
+        viewController.delegate = self
+        if let currentFilter {
+            if currentFilter == NSLocalizedString("completed", comment: "") || currentFilter == NSLocalizedString("uncompleted", comment: "") {
+                viewController.currentFilter = currentFilter
+            }
+        }
+        self.present(viewController, animated: true)
     }
     
     // MARK: - TrackerCellDelegate
@@ -319,6 +346,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             emptyImageView.isHidden = true
             emptyLabel.isHidden = true
         }
+        filtersButton.isHidden = !hasAnyTrackers
     }
     
     func addNewTracker(tracker newTracker: Tracker, title categoryTitle: String) {
@@ -436,6 +464,28 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private func filterTrackers(with searchText: String) {
         self.searchText = searchText
     }
+    
+    private func filterTrackers(_ categories: [TrackerCategory], completed: Bool) -> [TrackerCategory] {
+        var filteredCategories: [TrackerCategory] = []
+        for category in categories {
+            let filteredTrackers = category.trackers.filter { tracker in
+                let isCompleted = (try? trackerRecordStore.isTrackerCompleted(trackerId: tracker.id, onDate: currentDate)) ?? false
+                return isCompleted == completed
+            }
+            if !filteredTrackers.isEmpty {
+                filteredCategories.append(TrackerCategory(title: category.title, trackers: filteredTrackers))
+            }
+        }
+        return filteredCategories
+    }
+    
+    private func filterCompletedTrackers(_ categories: [TrackerCategory]) -> [TrackerCategory] {
+        return filterTrackers(categories, completed: true)
+    }
+    
+    private func filterNotCompletedTrackers(_ categories: [TrackerCategory]) -> [TrackerCategory] {
+        return filterTrackers(categories, completed: false)
+    }
 }
 
 // MARK: - CollectionView Delegate and DataSource
@@ -510,5 +560,70 @@ extension TrackerViewController: UISearchResultsUpdating {
         if self.searchText != currentSearchText {
             self.searchText = currentSearchText
         }
+    }
+}
+
+// MARK: - FiltersViewControllerDelegate
+
+extension TrackerViewController: FiltersViewControllerDelegate {
+    
+    private func schedulePredicate(for date: Date) -> NSPredicate {
+        let calendar = Calendar.current
+        let dayOfWeek = calendar.component(.weekday, from: date)
+        let selectedWeekDay = Week(calendarWeekday: dayOfWeek)
+        guard let bit = selectedWeekDay?.bitValue else {
+            return NSPredicate(value: true)
+        }
+        return NSPredicate(format: "schedule & %d != 0", 1 << bit)
+    }
+    
+    private func applyFetchPredicate(_ predicate: NSPredicate?) {
+        let fetchRequest = trackerStore.fetchedResultsController.fetchRequest
+        fetchRequest.predicate = predicate
+        do {
+            try trackerStore.fetchedResultsController.performFetch()
+            updateVisibleCategories()
+        } catch {
+            print("Ошибка получения трекеров по предикату: \(error)")
+            visibleCategories = []
+            filteredTrackers = []
+        }
+    }
+    
+    private func applyCompletedFilter(_ showCompleted: Bool) {
+        visibleCategories = filterTrackers(visibleCategories, completed: showCompleted)
+    }
+    
+    func didSelectFilter(_ filter: String) {
+        currentFilter = filter
+        switch filter {
+        case NSLocalizedString("all_trackers", comment: ""):
+            applyFetchPredicate(nil)
+            collectionView.reloadData()
+        case NSLocalizedString("trackers_for_today", comment: ""):
+            applyFetchPredicate(schedulePredicate(for: Date()))
+            collectionView.reloadData()
+            
+        case NSLocalizedString("completed", comment: ""):
+            applyFetchPredicate(schedulePredicate(for: currentDate))
+            applyCompletedFilter(true)
+            collectionView.reloadData()
+        case NSLocalizedString("uncompleted", comment: ""):
+            applyFetchPredicate(schedulePredicate(for: currentDate))
+            applyCompletedFilter(false)
+            collectionView.reloadData()
+        default:
+            break
+        }
+        dismiss(animated: true)
+        updateEmptyState()
+    }
+    
+    func didDeselectFilter() {
+        self.currentFilter = nil
+        applyFetchPredicate(schedulePredicate(for: currentDate))
+        collectionView.reloadData()
+        dismiss(animated: true)
+        updateEmptyState()
     }
 }

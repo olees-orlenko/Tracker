@@ -51,3 +51,8 @@
 "deleteTracker_title" = "Удалить";
 "deleteTrackerAlert" = "Уверены что хотите удалить трекер?";
 "edit_habit_title" = "Редактирование привычки";
+"filtersButton_title" = "Фильтры";
+"all_trackers" = "Все трекеры";
+"trackers_for_today" = "Трекеры на сегодня";
+"completed" = "Завершенные";
+"uncompleted" = "Не завершенные";
