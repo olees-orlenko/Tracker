@@ -42,7 +42,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
             updateVisibleCategories()
         }
     }
-    private var currentFilter: String?
+    private var currentFilter: String? = NSLocalizedString("all_trackers", comment: "")
     private let trackerStore = TrackerStore()
     private let trackerCategoryStore = TrackerCategoryStore()
     private let trackerRecordStore = TrackerRecordStore()
@@ -244,11 +244,11 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         let viewController = FiltersViewController()
         viewController.delegate = self
         if let currentFilter {
-            if currentFilter == NSLocalizedString("completed", comment: "") || currentFilter == NSLocalizedString("uncompleted", comment: "") {
+            if currentFilter == NSLocalizedString("completed", comment: "") || currentFilter == NSLocalizedString("uncompleted", comment: "") || currentFilter == NSLocalizedString("trackers_for_today", comment: "") {
                 viewController.currentFilter = currentFilter
             }
         }
-        self.present(viewController, animated: true)
+        self.present(viewController, animated: true, completion: nil)
     }
     
     // MARK: - TrackerCellDelegate
@@ -404,24 +404,8 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     }
     
     private func filterTrackersForSelectedDate(_ date: Date) {
-        let calendar = Calendar.current
-        let dayOfWeek = calendar.component(.weekday, from: date)
-        guard let selectedWeekDay = Week(calendarWeekday: dayOfWeek) else {
-            self.visibleCategories = []
-            print("Не удалось получить день недели")
-            return
-        }
-        let fetchRequest = trackerStore.fetchedResultsController.fetchRequest
-        let predicate = NSPredicate(format: "schedule & %d != 0", 1 << selectedWeekDay.bitValue)
-        fetchRequest.predicate = predicate
-        print("Предикат: \(predicate)")
-        do {
-            try trackerStore.fetchedResultsController.performFetch()
-            print("Количество трекеров после фильтрации: \(trackerStore.fetchedResultsController.fetchedObjects?.count ?? 0)")
-            updateVisibleCategories()
-        } catch {
-            print("Ошибка получения трекера по предикату: \(error)")
-        }
+        applyFetchPredicate(schedulePredicate(for: date))
+        print("Количество трекеров после фильтрации: \(trackerStore.fetchedResultsController.fetchedObjects?.count ?? 0)")
     }
     
     private func updateVisibleCategories() {
@@ -570,10 +554,10 @@ extension TrackerViewController: FiltersViewControllerDelegate {
     private func schedulePredicate(for date: Date) -> NSPredicate {
         let calendar = Calendar.current
         let dayOfWeek = calendar.component(.weekday, from: date)
-        let selectedWeekDay = Week(calendarWeekday: dayOfWeek)
-        guard let bit = selectedWeekDay?.bitValue else {
+        guard let selectedWeekDay = Week(calendarWeekday: dayOfWeek) else {
             return NSPredicate(value: true)
         }
+        let bit = selectedWeekDay.bitValue
         return NSPredicate(format: "schedule & %d != 0", 1 << bit)
     }
     
@@ -596,32 +580,33 @@ extension TrackerViewController: FiltersViewControllerDelegate {
     
     func didSelectFilter(_ filter: String) {
         currentFilter = filter
+        let allKey = NSLocalizedString("all_trackers", comment: "")
+        let todayKey = NSLocalizedString("trackers_for_today", comment: "")
+        let completedKey = NSLocalizedString("completed", comment: "")
+        let uncompletedKey = NSLocalizedString("uncompleted", comment: "")
         switch filter {
-        case NSLocalizedString("all_trackers", comment: ""):
+        case allKey:
             applyFetchPredicate(nil)
-            collectionView.reloadData()
-        case NSLocalizedString("trackers_for_today", comment: ""):
-            applyFetchPredicate(schedulePredicate(for: Date()))
-            collectionView.reloadData()
-            
-        case NSLocalizedString("completed", comment: ""):
+        case todayKey:
+            currentDate = Date()
+            applyFetchPredicate(schedulePredicate(for: currentDate))
+        case completedKey:
             applyFetchPredicate(schedulePredicate(for: currentDate))
             applyCompletedFilter(true)
-            collectionView.reloadData()
-        case NSLocalizedString("uncompleted", comment: ""):
+        case uncompletedKey:
             applyFetchPredicate(schedulePredicate(for: currentDate))
             applyCompletedFilter(false)
-            collectionView.reloadData()
         default:
-            break
+            applyFetchPredicate(nil)
         }
+        collectionView.reloadData()
         dismiss(animated: true)
         updateEmptyState()
     }
     
     func didDeselectFilter() {
-        self.currentFilter = nil
-        applyFetchPredicate(schedulePredicate(for: currentDate))
+        currentFilter = NSLocalizedString("all_trackers", comment: "")
+        applyFetchPredicate(nil)
         collectionView.reloadData()
         dismiss(animated: true)
         updateEmptyState()

@@ -37,6 +37,14 @@ final class FiltersViewController: UIViewController {
         setupConstraints()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if currentFilter == nil {
+            currentFilter = filters.first
+        }
+        tableView.reloadData()
+    }
+    
     // MARK: - Setup UI Elements
     
     private func setupView() {
@@ -61,6 +69,7 @@ final class FiltersViewController: UIViewController {
         tableView.layer.masksToBounds = true
         tableView.separatorStyle = .none
         tableView.tableFooterView = UIView()
+        tableView.allowsSelection = true
         tableView.register(CategoryTableViewCell.self, forCellReuseIdentifier: CategoryTableViewCell.reuseIdentifier)
         view.addSubview(tableView)
     }
@@ -87,23 +96,30 @@ extension FiltersViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryTableViewCell.reuseIdentifier, for: indexPath) as? CategoryTableViewCell else {
-            return UITableViewCell()
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryTableViewCell.reuseIdentifier, for: indexPath) as? CategoryTableViewCell else {
+                return UITableViewCell()
+            }
+            cell.backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
+            cell.textLabel?.text = filters[indexPath.row]
+            cell.textLabel?.textColor = color.trackerTintColor()
+            cell.tintColor = .systemBlue
+            let numberOfRows = tableView.numberOfRows(inSection: indexPath.section)
+            let isLastRow = indexPath.row == numberOfRows - 1
+            cell.setSeparatorHidden(isLastRow)
+            if let current = currentFilter, current == filters[indexPath.row], indexPath.row != 0 {
+                cell.accessoryType = .checkmark
+            } else {
+                cell.accessoryType = .none
+            }
+            if currentFilter == filters[indexPath.row] {
+                tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
+                cell.isSelected = true
+            } else {
+                cell.isSelected = false
+            }
+            return cell
         }
-        let backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
-        cell.backgroundColor = backgroundColor
-        cell.contentView.backgroundColor = .clear
-        cell.textLabel?.text = filters[indexPath.row]
-        cell.textLabel?.textColor = color.trackerTintColor()
-        let numberOfRows = tableView.numberOfRows(inSection: indexPath.section)
-        let isLastRow = indexPath.row == numberOfRows - 1
-        cell.setSeparatorHidden(isLastRow)
-        if currentFilter == filters[indexPath.row] {
-            tableView.selectRow(at: indexPath, animated: true, scrollPosition: .none)
-            cell.isSelected = true
-        }
-        return cell
-    }
+    
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 75
@@ -113,17 +129,23 @@ extension FiltersViewController: UITableViewDataSource {
 // MARK: - UITableViewDelegate
 
 extension FiltersViewController: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let selectedFilter = filters[indexPath.row]
-        if currentFilter == selectedFilter {
-            self.dismiss(animated: true)
-            return
-        }
-        tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        delegate?.didSelectFilter(selectedFilter)
-        self.dismiss(animated: true)
-    }
 
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+            let oldFilter = currentFilter
+            let newFilter = filters[indexPath.row]
+            currentFilter = newFilter
+            var rowsToReload: [IndexPath] = [indexPath]
+            if let old = oldFilter, let oldIndex = filters.firstIndex(of: old) {
+                let oldIndexPath = IndexPath(row: oldIndex, section: 0)
+                if oldIndexPath != indexPath {
+                    rowsToReload.append(oldIndexPath)
+                }
+            }
+            tableView.reloadRows(at: rowsToReload, with: .none)
+            delegate?.didSelectFilter(newFilter)
+            dismiss(animated: true, completion: nil)
+        }
+    
     func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
         tableView.cellForRow(at: indexPath)?.accessoryType = .none
     }
