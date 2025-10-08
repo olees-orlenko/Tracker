@@ -1,22 +1,34 @@
 import UIKit
 
 struct Tracker {
-    let id: UUID
-    let name: String
-    let color: UIColor
-    let emoji: String
-    let schedule: [Week]
+    var id: UUID
+    var name: String
+    var color: UIColor
+    var emoji: String
+    var schedule: [Week]
 }
 
 enum Week: String, CaseIterable, Codable {
-    case monday = "Понедельник"
-    case tuesday = "Вторник"
-    case wednesday = "Среда"
-    case thursday = "Четверг"
-    case friday = "Пятница"
-    case saturday = "Суббота"
-    case sunday = "Воскресенье"
-
+    case monday = "Monday"
+    case tuesday = "Tuesday"
+    case wednesday = "Wednesday"
+    case thursday = "Thursday"
+    case friday = "Friday"
+    case saturday = "Saturday"
+    case sunday = "Sunday"
+    
+    var localizedString: String {
+        switch self {
+        case .monday: return NSLocalizedString("monday", comment: "Monday")
+        case .tuesday: return NSLocalizedString("tuesday", comment: "Tuesday")
+        case .wednesday: return NSLocalizedString("wednesday", comment: "Wednesday")
+        case .thursday: return NSLocalizedString("thursday", comment: "Thursday")
+        case .friday: return NSLocalizedString("friday", comment: "Friday")
+        case .saturday: return NSLocalizedString("saturday", comment: "Saturday")
+        case .sunday: return NSLocalizedString("sunday", comment: "Sunday")
+        }
+    }
+    
     var bitValue: Int {
         switch self {
         case .sunday:    return 0
@@ -28,7 +40,7 @@ enum Week: String, CaseIterable, Codable {
         case .saturday:  return 6
         }
     }
-
+    
     init?(calendarWeekday: Int) {
         switch calendarWeekday {
         case 1: self = .sunday
@@ -41,7 +53,7 @@ enum Week: String, CaseIterable, Codable {
         default: return nil
         }
     }
-
+    
     static func changeScheduleValue(for schedule: [Week]) -> Int16 {
         var scheduleValue: Int16 = 0
         for day in schedule {
@@ -49,7 +61,7 @@ enum Week: String, CaseIterable, Codable {
         }
         return scheduleValue
     }
-
+    
     static func changeScheduleArray(from value: Int16) -> [Week] {
         var schedule: [Week] = []
         for day in Week.allCases {

@@ -9,6 +9,7 @@ final class ScheduleViewController: UIViewController {
     var switchButton: [Int : Bool] = [:]
     var selectedDays: [Week] = []
     var onScheduleSelected: (([Week]) -> Void)?
+    private let color = Colors()
     
     // MARK: - UI Elements
     
@@ -29,11 +30,11 @@ final class ScheduleViewController: UIViewController {
     
     private func setupView() {
         tableView.tableFooterView = UIView()
-        view.backgroundColor = .white
-        navigationItem.title = "Расписание"
+        view.backgroundColor = color.viewBackgroundColor
+        navigationItem.title = NSLocalizedString("schedule_title", comment: "Title for the Schedule view")
         let title: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 16, weight: .medium),
-            .foregroundColor: UIColor.black
+            .foregroundColor: color.navigationBarTintColor
         ]
         navigationController?.navigationBar.titleTextAttributes = title
     }
@@ -41,6 +42,7 @@ final class ScheduleViewController: UIViewController {
     private func setupTableView() {
         tableView.separatorStyle = .singleLine
         tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        tableView.separatorColor = .gray
         tableView.tableHeaderView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: CGFloat.leastNormalMagnitude))
         tableView.layer.cornerRadius = 16
         tableView.layer.masksToBounds = true
@@ -53,10 +55,10 @@ final class ScheduleViewController: UIViewController {
     }
     
     private func setupDoneButton() {
-        doneButton.setTitle("Готово", for: .normal)
+        doneButton.setTitle(NSLocalizedString("done_button_title", comment: "Title for the Done button"), for: .normal)
         doneButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        doneButton.setTitleColor(.white, for: .normal)
-        doneButton.backgroundColor = UIColor(resource: .black)
+        doneButton.setTitleColor(color.viewBackgroundColor, for: .normal)
+        doneButton.backgroundColor = color.doneButtonBackgroundColor()
         doneButton.layer.cornerRadius = 16
         doneButton.layer.masksToBounds = true
         doneButton.addTarget(self, action: #selector(doneButtonTapped), for: .touchUpInside)
@@ -103,7 +105,7 @@ extension ScheduleViewController: UITableViewDataSource {
         let backgroundColor = UIColor(resource: .background).withAlphaComponent(0.3)
         cell.backgroundColor = backgroundColor
         cell.contentView.backgroundColor = .clear
-        cell.textLabel?.text = day.rawValue
+        cell.textLabel?.text = day.localizedString
         cell.daySwitch.isOn = selectedDays.contains(day)
         cell.daySwitch.tag = indexPath.row
         cell.daySwitch.removeTarget(nil, action: nil, for: .allEvents)

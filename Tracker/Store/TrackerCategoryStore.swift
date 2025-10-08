@@ -18,6 +18,7 @@ protocol TrackerCategoryStoreDelegate: AnyObject {
 
 final class TrackerCategoryStore: NSObject {
     weak var delegate: TrackerCategoryStoreDelegate?
+    static let shared = TrackerCategoryStore()
     
     lazy var fetchedResultsController: NSFetchedResultsController<TrackerCategoryCoreData> = {
         let fetchRequest: NSFetchRequest<TrackerCategoryCoreData> = TrackerCategoryCoreData.fetchRequest()
@@ -31,22 +32,19 @@ final class TrackerCategoryStore: NSObject {
         controller.delegate = self
         return controller
     }()
+    
+    private lazy var trackerStore: TrackerStore = TrackerStore.shared
     private let context: NSManagedObjectContext
-    private let trackerStore: TrackerStore
     private var insertedIndexPath: [IndexPath] = []
     private var deletedIndexPath: [IndexPath] = []
     private var updatedIndexPath: [IndexPath] = []
     private var movedIndexPath: [(IndexPath, IndexPath)] = []
     
-    convenience override init() {
-        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        let trackerStore = TrackerStore(context: context)
-        self.init(context: context, trackerStore: trackerStore)
-    }
-    
-    init(context: NSManagedObjectContext, trackerStore: TrackerStore) {
-        self.context = context
-        self.trackerStore = trackerStore
+    private override init() {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+            fatalError("AppDelegate not found")
+        }
+        self.context = appDelegate.persistentContainer.viewContext
         super.init()
         performFetch()
     }

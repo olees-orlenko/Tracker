@@ -13,17 +13,17 @@ protocol TrackerRecordStoreDelegate: AnyObject {
 
 final class TrackerRecordStore: NSObject {
     weak var delegate: TrackerRecordStoreDelegate?
+    static let shared = TrackerRecordStore()
     
     private let context: NSManagedObjectContext
-    private let trackerStore = TrackerStore()
+    private lazy var trackerStore = TrackerStore.shared
     
-    convenience override init() {
-        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        self.init(context: context)
-    }
-    
-    init(context: NSManagedObjectContext) {
-        self.context = context
+    private override init() {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+            fatalError("AppDelegate not found")
+        }
+        self.context = appDelegate.persistentContainer.viewContext
+        super.init()
     }
     
     func createRecord(trackerId: UUID, date: Date) throws {
@@ -90,5 +90,27 @@ final class TrackerRecordStore: NSObject {
         } catch {
             throw TrackerRecordStoreError.fetchFailed(error)
         }
+    }
+    
+    func fetchCompletedTrackers() throws -> Int {
+        var result = 0
+        try context.performAndWait {
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = TrackerRecordCoreData.fetchRequest()
+            fetchRequest.resultType = .countResultType
+            result = try context.count(for: fetchRequest)
+        }
+        return result
+    }
+    
+    func fetchPerfectDaysCount() throws -> Int {
+        return 0
+    }
+    
+    func fetchBestPeriod() throws -> Int {
+        return 0
+    }
+    
+    func fetchAverageValue() throws -> Int {
+        return 0
     }
 }

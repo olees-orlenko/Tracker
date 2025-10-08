@@ -12,8 +12,14 @@ final class OnboardingViewController: UIPageViewController {
     // MARK: - Private Properties
     
     private lazy var pages: [OnboardingTrackerViewController] = [
-        OnboardingTrackerViewController(imageName: "Onboarding1", labelText: "Отслеживайте только то, что хотите"),
-        OnboardingTrackerViewController(imageName: "Onboarding2", labelText: "Даже если это\nне литры воды и йога")
+        OnboardingTrackerViewController(
+            imageName: "Onboarding1",
+            labelText: NSLocalizedString("onboarding_track_what_you_want", comment: "Onboarding 1 text")
+        ),
+        OnboardingTrackerViewController(
+            imageName: "Onboarding2",
+            labelText: NSLocalizedString("onboarding_not_just_water_yoga", comment: "Onboarding 2 text")
+        )
     ]
     
     private lazy var pageControl: UIPageControl = {
@@ -56,7 +62,7 @@ final class OnboardingViewController: UIPageViewController {
         button.backgroundColor = .black
         button.layer.cornerRadius = 16
         button.layer.masksToBounds = true
-        button.setTitle("Вот это технологии!", for: .normal)
+        button.setTitle(NSLocalizedString("wow_technology", comment: "Button title expressing amazement at technology"), for: .normal)
         button.setTitleColor(.white, for: .normal)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         button.addTarget(self, action: #selector(tapButton), for: .touchUpInside)

@@ -23,12 +23,17 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     private var currentDate: Date = Date()
     private var isFutureDate: Bool = false
     private var color: UIColor?
+    private let colors = Colors()
+    private var isCompleted: Bool = false
+    private var trackerEmoji: String?
+    private var trackerSchedule: [Week]?
     
     // MARK: - Init
     
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupCardView()
+        setupInteraction()
         setupCounterLabel()
         setupEmojiLabel()
         setupTextLabel()
@@ -51,6 +56,11 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         contentView.addSubview(cardView)
     }
     
+    private func setupInteraction() {
+        let interaction = UIContextMenuInteraction(delegate: self)
+        cardView.addInteraction(interaction)
+    }
+    
     private func setupTextLabel() {
         textLabel.text = "Поливать растения"
         textLabel.numberOfLines = 0
@@ -58,7 +68,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         textLabel.textColor = UIColor(resource: .white)
         textLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         textLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(textLabel)
+        cardView.addSubview(textLabel)
     }
     
     private func setupEmojiLabel() {
@@ -69,12 +79,12 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         emojiLabel.layer.cornerRadius = 12
         emojiLabel.layer.masksToBounds = true
         emojiLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(emojiLabel)
+        cardView.addSubview(emojiLabel)
     }
     
     private func setupCounterLabel() {
         counterLabel.text = "0 дней"
-        counterLabel.textColor = UIColor(resource: .black)
+        counterLabel.textColor = colors.trackerTintColor()
         counterLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         counterLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(counterLabel)
@@ -82,7 +92,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     
     private func setuptTitleLabel() {
         titleLabel.text = "Домашний уют"
-        titleLabel.textColor = UIColor(resource: .black)
+        titleLabel.textColor = colors.trackerTintColor()
         titleLabel.font = UIFont.systemFont(ofSize: 19, weight: .bold)
         titleLabel.contentMode = .left
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -93,7 +103,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         addButton.setImage(UIImage(systemName: "plus"), for: .normal)
         let checkmarkImage = UIImage(systemName: "checkmark")
         addButton.setImage(checkmarkImage, for: .selected)
-        addButton.tintColor = UIColor(resource: .white)
+        addButton.tintColor = colors.createButtonEnabledTextColor()
         addButton.backgroundColor = UIColor(resource: .green)
         addButton.layer.cornerRadius = 16
         addButton.clipsToBounds = true
@@ -121,7 +131,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
             addButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
             counterLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             counterLabel.heightAnchor.constraint(equalToConstant: 18),
-            counterLabel.centerYAnchor.constraint(equalTo: addButton.centerYAnchor), //
+            counterLabel.centerYAnchor.constraint(equalTo: addButton.centerYAnchor),
             counterLabel.trailingAnchor.constraint(lessThanOrEqualTo: addButton.leadingAnchor, constant: -8),
             emojiLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
             emojiLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
@@ -155,12 +165,20 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         addButton.isSelected = newIsCompleted
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        indexPath = nil
+        trackerID = nil
+        isCompleted = false
+    }
+    
     // MARK: - Configuration
     
     func configure(isCompleted: Bool, trackerID: UUID, trackerName: String, indexPath: IndexPath, categoryTitle: String, completedDays: Int, currentDate: Date, color: UIColor, emoji: String) {
         self.trackerID = trackerID
         self.textLabel.text = trackerName
         self.indexPath = indexPath
+        self.isCompleted = isCompleted
         self.categoryTitle = categoryTitle
         self.completedDays = completedDays
         self.currentDate = currentDate
@@ -188,6 +206,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         addButton.isSelected = isCompleted
         let image = isCompleted ? UIImage(named: "Plus") : UIImage(systemName: "plus")
         addButton.setImage(image, for: .normal)
+        addButton.tintColor = colors.createButtonEnabledTextColor()
         if isFutureDate {
             addButton.backgroundColor = UIColor.gray
         } else {
@@ -202,19 +221,50 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         }
     }
     
-    private func updateCounterLabelText(completedDays: Int){
+    private func updateCounterLabelText(completedDays: Int) {
         let days = completedDays % 100
+        let localizedString: String
         if (11...14).contains(days) {
-            counterLabel.text = "\(completedDays) дней"
+            localizedString = NSLocalizedString("days_plural", comment: "")
         } else {
             switch days % 10 {
             case 1:
-                counterLabel.text = "\(completedDays) день"
+                localizedString = NSLocalizedString("day_singular", comment: "")
             case 2...4:
-                counterLabel.text = "\(completedDays) дня"
+                localizedString = NSLocalizedString("days_few", comment: "")
             default:
-                counterLabel.text = "\(completedDays) дней"
+                localizedString = NSLocalizedString("days_plural", comment: "")
             }
+        }
+        counterLabel.text = "\(completedDays) \(localizedString)"
+    }
+}
+
+extension TrackerCollectionViewCell: UIContextMenuInteractionDelegate {
+    func contextMenuInteraction(_ interaction: UIContextMenuInteraction,
+                                configurationForMenuAtLocation location: CGPoint) -> UIContextMenuConfiguration? {
+        print("contextMenuInteraction called for cell: indexPath=\(String(describing: indexPath)), trackerID=\(String(describing: trackerID)), isCompleted=\(String(describing: isCompleted))")
+        guard let indexPath = indexPath,
+              let trackerID = trackerID else {
+            return nil
+        }
+        let completed = self.isCompleted ?? false
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+            guard let self = self else { return nil }
+            let edit = UIAction(title: NSLocalizedString("editTracker_title", comment: "")) { _ in
+                guard let trackerID = self.trackerID,
+                      let indexPath = self.indexPath else {
+                    return
+                }
+                self.delegate?.didTapEditButton(trackerId: trackerID, at: indexPath)
+            }
+            let delete = UIAction(title: NSLocalizedString("deleteTracker_title", comment: ""),
+                                  image: nil,
+                                  attributes: .destructive) { _ in
+                let tracker = Tracker(id: trackerID, name: "", color: .clear, emoji: "", schedule: [])
+                self.delegate?.didTapDeleteButton(tracker: tracker)
+            }
+            return UIMenu(title: "", children: [edit, delete])
         }
     }
 }
