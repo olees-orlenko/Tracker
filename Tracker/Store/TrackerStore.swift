@@ -23,10 +23,10 @@ protocol TrackerStoreDelegate: AnyObject {
 
 final class TrackerStore: NSObject {
     weak var delegate: TrackerStoreDelegate?
+    static let shared = TrackerStore()
     
     var fetchedResultsController: NSFetchedResultsController<TrackerCoreData>!
     private let context: NSManagedObjectContext
-    
     private let uiColorMarshalling = UIColorMarshalling()
     private var insertedIndexesSection: IndexSet?
     private var insertedIndexPath: [IndexPath]?
@@ -34,31 +34,34 @@ final class TrackerStore: NSObject {
     private var deletedIndexesSection: IndexSet?
     private var movedIndexPath: [(IndexPath, IndexPath)]?
     
-    convenience override init() {
-        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        self.init(context: context)
+    private override init() {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+            fatalError("AppDelegate not found")
+        }
+        self.context = appDelegate.persistentContainer.viewContext
+        super.init()
+        setupFetchedResultsController()
     }
     
-    init(context: NSManagedObjectContext) {
-        self.context = context
-        super.init()
+    private func setupFetchedResultsController() {
         let fetchRequest = TrackerCoreData.fetchRequest()
         fetchRequest.sortDescriptors = [
-            NSSortDescriptor(keyPath: \TrackerCoreData.name, ascending: true),
-            NSSortDescriptor(keyPath: \TrackerCoreData.category?.title, ascending: false)
+            NSSortDescriptor(keyPath: \TrackerCoreData.category?.title, ascending: true),
+            NSSortDescriptor(keyPath: \TrackerCoreData.name, ascending: true)
         ]
         let controller = NSFetchedResultsController(
             fetchRequest: fetchRequest,
             managedObjectContext: context,
-            sectionNameKeyPath: nil,
+            sectionNameKeyPath: #keyPath(TrackerCoreData.category.title),
             cacheName: nil
         )
         self.fetchedResultsController = controller
         controller.delegate = self
         do {
-            try controller.performFetch()        } catch {
-                print("Failed to perform fetch for TrackerStore: \(error)")
-            }
+            try controller.performFetch()
+        } catch {
+            print("Failed to perform fetch for TrackerStore: \(error)")
+        }
     }
     
     func tracker(from trackerCoreData: TrackerCoreData) throws -> Tracker? {

@@ -2,7 +2,6 @@ import UIKit
 
 protocol CategoryViewModelProtocol: AnyObject {
     
-    var trackerCategoryStore: TrackerCategoryStore { get }
     var categories: [TrackerCategory] { get }
     var onCategoriesUpdate: (() -> Void)? { get set }
     var onCategorySelected: ((TrackerCategory) -> Void)? { get set }
@@ -21,10 +20,10 @@ final class CategoryViewModel: CategoryViewModelProtocol {
             onCategoriesUpdate?()
         }
     }
+    private let trackerCategoryStore = TrackerCategoryStore.shared
     
     // MARK: - Properties
     
-    var trackerCategoryStore: TrackerCategoryStore
     var onCategoriesUpdate: (() -> Void)?
     var selectedCategory: TrackerCategory?
     var onCategorySelected: ((TrackerCategory) -> Void)?
@@ -33,7 +32,6 @@ final class CategoryViewModel: CategoryViewModelProtocol {
     // MARK: - Init
     
     init(trackerCategoryStore: TrackerCategoryStore) {
-        self.trackerCategoryStore = trackerCategoryStore
         trackerCategoryStore.delegate = self
     }
     

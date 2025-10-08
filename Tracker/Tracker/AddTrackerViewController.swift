@@ -8,7 +8,7 @@ enum TrackerMode {
 final class AddTrackerViewController: UIViewController, UITextFieldDelegate, ScheduleViewControllerDelegate {
     
     weak var delegate: AddTrackerViewControllerDelegate?
-    private let trackerRecordStore = TrackerRecordStore()
+    let trackerRecordStore = TrackerRecordStore.shared
     private let cellIdentifier = "cell"
     private let color = Colors()
     
@@ -510,7 +510,7 @@ extension AddTrackerViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         if indexPath.row == 0 {
-            let categoryViewModel = CategoryViewModel(trackerCategoryStore: TrackerCategoryStore())
+            let categoryViewModel = CategoryViewModel(trackerCategoryStore: TrackerCategoryStore.shared)
             let categoryViewController = CategoryViewController(viewModel: categoryViewModel)
             categoryViewController.delegate = self
             print ("Установили делегата")

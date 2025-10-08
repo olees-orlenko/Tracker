@@ -15,13 +15,14 @@ final class StatisticViewController: UIViewController {
     
     // MARK: - Private Properties
     
-    private let trackerRecordStore = TrackerRecordStore()
+    private let trackerRecordStore = TrackerRecordStore.shared
     private let colors = Colors()
     
     // MARK: -  Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        trackerRecordStore.delegate = self
         setupView()
         setupStackView()
         setupTitle()
