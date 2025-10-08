@@ -73,9 +73,9 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     private var selectedEmojiIndex: Int?
     private var selectedColorIndex: Int?
     private var isTrackerSaved = false
-    private var nameTrackerTextFieldTopConstraintToContent: NSLayoutConstraint!
-    private var daysLabelTopConstraintToContent: NSLayoutConstraint!
-    private var nameTrackerTextFieldTopConstraintToDaysLabel: NSLayoutConstraint!
+    private var nameTrackerTextFieldTopConstraintToContent: NSLayoutConstraint?
+    private var daysLabelTopConstraintToContent: NSLayoutConstraint?
+    private var nameTrackerTextFieldTopConstraintToDaysLabel: NSLayoutConstraint?
     
     // MARK: - Lifecycle
     
@@ -275,9 +275,9 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
         nameTrackerTextFieldTopConstraintToContent = nameTrackerTextField.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24)
         daysLabelTopConstraintToContent = daysLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24)
         nameTrackerTextFieldTopConstraintToDaysLabel = nameTrackerTextField.topAnchor.constraint(equalTo: daysLabel.bottomAnchor, constant: 40)
-        nameTrackerTextFieldTopConstraintToContent.isActive = true
-        daysLabelTopConstraintToContent.isActive = false
-        nameTrackerTextFieldTopConstraintToDaysLabel.isActive = false
+        nameTrackerTextFieldTopConstraintToContent?.isActive = true
+        daysLabelTopConstraintToContent?.isActive = false
+        nameTrackerTextFieldTopConstraintToDaysLabel?.isActive = false
     }
     
     // MARK: - Actions
@@ -330,12 +330,12 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
     
     private func configureForMode() {
         guard isViewLoaded else { return }
-        nameTrackerTextFieldTopConstraintToContent.isActive = false
-        daysLabelTopConstraintToContent.isActive = false
-        nameTrackerTextFieldTopConstraintToDaysLabel.isActive = false
+        nameTrackerTextFieldTopConstraintToContent?.isActive = false
+        daysLabelTopConstraintToContent?.isActive = false
+        nameTrackerTextFieldTopConstraintToDaysLabel?.isActive = false
         switch mode {
         case .create:
-            nameTrackerTextFieldTopConstraintToContent.isActive = true
+            nameTrackerTextFieldTopConstraintToContent?.isActive = true
             daysLabel.isHidden = true
         case .edit(let tracker, let categoryTitle):
             nameTrackerTextField.text = tracker.name
@@ -362,8 +362,8 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
             let completed = (try? trackerRecordStore.fetchCompletedDates(forTrackerId: tracker.id).count) ?? 0
             updateCounterLabelText(completed)
             daysLabel.isHidden = false
-            daysLabelTopConstraintToContent.isActive = true
-            nameTrackerTextFieldTopConstraintToDaysLabel.isActive = true
+            daysLabelTopConstraintToContent?.isActive = true
+            nameTrackerTextFieldTopConstraintToDaysLabel?.isActive = true
         }
         UIView.animate(withDuration: 0.3) {
             self.view.layoutIfNeeded()
@@ -388,18 +388,18 @@ final class AddTrackerViewController: UIViewController, UITextFieldDelegate, Sch
         daysLabel.text = "\(completedDays) \(localizedString)"
     }
     
-    private func uiColorEqual(_ a: UIColor, _ b: UIColor, tolerance: CGFloat = 0.001) -> Bool {
-        var ra: CGFloat = 0, ga: CGFloat = 0, ba: CGFloat = 0, aa: CGFloat = 0
-        var rb: CGFloat = 0, gb: CGFloat = 0, bb: CGFloat = 0, ab: CGFloat = 0
-        guard a.getRed(&ra, green: &ga, blue: &ba, alpha: &aa),
-              b.getRed(&rb, green: &gb, blue: &bb, alpha: &ab) else {
-            return a == b
-        }
-        return abs(ra - rb) <= tolerance &&
-        abs(ga - gb) <= tolerance &&
-        abs(ba - bb) <= tolerance &&
-        abs(aa - ab) <= tolerance
-    }
+//    private func uiColorEqual(_ a: UIColor, _ b: UIColor, tolerance: CGFloat = 0.001) -> Bool {
+//        var ra: CGFloat = 0, ga: CGFloat = 0, ba: CGFloat = 0, aa: CGFloat = 0
+//        var rb: CGFloat = 0, gb: CGFloat = 0, bb: CGFloat = 0, ab: CGFloat = 0
+//        guard a.getRed(&ra, green: &ga, blue: &ba, alpha: &aa),
+//              b.getRed(&rb, green: &gb, blue: &bb, alpha: &ab) else {
+//            return a == b
+//        }
+//        return abs(ra - rb) <= tolerance &&
+//        abs(ga - gb) <= tolerance &&
+//        abs(ba - bb) <= tolerance &&
+//        abs(aa - ab) <= tolerance
+//    }
     
     func didUpdateSchedule(selectedDays: [Week]) {
         self.selectedDays = selectedDays

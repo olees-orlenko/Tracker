@@ -457,11 +457,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         let dateFilteredTrackers = fetchedObjects
         let searchFilteredTrackers = dateFilteredTrackers.filter { trackerCoreData in
             guard let trackerName = trackerCoreData.name else { return false }
-            if searchText.isEmpty {
-                return true
-            } else {
-                return trackerName.lowercased().contains(searchText.lowercased())
-            }
+            return searchText.isEmpty ? true : trackerName.lowercased().contains(searchText.lowercased())
         }
         let groupedByCategories = Dictionary(grouping: searchFilteredTrackers) { (trackerCoreData) -> String in
             return trackerCoreData.category?.title ?? "Без категории"
@@ -485,12 +481,12 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     private func filterTrackers(with searchText: String) {
         self.searchText = searchText
     }
-    
+
     private func filterTrackers(_ categories: [TrackerCategory], completed: Bool) -> [TrackerCategory] {
         var filteredCategories: [TrackerCategory] = []
         for category in categories {
             let filteredTrackers = category.trackers.filter { tracker in
-                let isCompleted = (try? trackerRecordStore.isTrackerCompleted(trackerId: tracker.id, onDate: currentDate)) ?? false
+                let isCompleted = trackerRecordStore.isTrackerCompleted(trackerId: tracker.id, onDate: currentDate)
                 return isCompleted == completed
             }
             if !filteredTrackers.isEmpty {
@@ -509,11 +505,7 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     }
     
     private func updateSearchFieldConstraints(showCancelButton: Bool) {
-        if showCancelButton {
-            searchFieldTrailingConstraintWhenCancelHidden.isActive = false
-        } else {
-            searchFieldTrailingConstraintWhenCancelHidden.isActive = true
-        }
+        searchFieldTrailingConstraintWhenCancelHidden.isActive = !showCancelButton
         UIView.animate(withDuration: 0.3) {
             self.view.layoutIfNeeded()
         }

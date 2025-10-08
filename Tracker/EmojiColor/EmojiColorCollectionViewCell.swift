@@ -12,7 +12,7 @@ final class EmojiColorCollectionViewCell: UICollectionViewCell {
     
     private var representedEmoji: String?
     private var representedColor: UIColor?
-    var emojiSelectionBackgroundColor: UIColor? = nil
+    var emojiSelectionBackgroundColor: UIColor?
     
     // MARK: - Init
     
@@ -70,7 +70,7 @@ final class EmojiColorCollectionViewCell: UICollectionViewCell {
         colorView.isHidden = true
         label.text = nil
         colorView.backgroundColor = .clear
-        if let emoji = emoji {
+        if let emoji {
             label.isHidden = false
             label.text = emoji
         } else if let color = color {
@@ -87,7 +87,7 @@ final class EmojiColorCollectionViewCell: UICollectionViewCell {
         contentView.layer.cornerRadius = 8
         if let _ = representedEmoji {
             if isSelected {
-                contentView.backgroundColor = emojiSelectionBackgroundColor ?? UIColor(named: "backgroundColor") ?? UIColor.systemGray5
+                contentView.backgroundColor = emojiSelectionBackgroundColor ?? UIColor(resource: .background) ?? UIColor.systemGray5
                 contentView.layer.cornerRadius = 16
             }
         } else if let color = representedColor {
