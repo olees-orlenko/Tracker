@@ -103,7 +103,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         addButton.setImage(UIImage(systemName: "plus"), for: .normal)
         let checkmarkImage = UIImage(systemName: "checkmark")
         addButton.setImage(checkmarkImage, for: .selected)
-        addButton.tintColor = UIColor(resource: .white)
+        addButton.tintColor = colors.createButtonEnabledTextColor()
         addButton.backgroundColor = UIColor(resource: .green)
         addButton.layer.cornerRadius = 16
         addButton.clipsToBounds = true
@@ -131,7 +131,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
             addButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
             counterLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             counterLabel.heightAnchor.constraint(equalToConstant: 18),
-            counterLabel.centerYAnchor.constraint(equalTo: addButton.centerYAnchor), //
+            counterLabel.centerYAnchor.constraint(equalTo: addButton.centerYAnchor),
             counterLabel.trailingAnchor.constraint(lessThanOrEqualTo: addButton.leadingAnchor, constant: -8),
             emojiLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
             emojiLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
@@ -206,6 +206,7 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
         addButton.isSelected = isCompleted
         let image = isCompleted ? UIImage(named: "Plus") : UIImage(systemName: "plus")
         addButton.setImage(image, for: .normal)
+        addButton.tintColor = colors.createButtonEnabledTextColor()
         if isFutureDate {
             addButton.backgroundColor = UIColor.gray
         } else {

@@ -23,6 +23,9 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     var currentDate = Date()
     var categories: [TrackerCategory] = []
     var trackers: [Tracker] = []
+    let trackerStore = TrackerStore.shared
+    let trackerCategoryStore = TrackerCategoryStore.shared
+    let trackerRecordStore = TrackerRecordStore.shared
     
     // MARK: - Private Properties
     
@@ -47,12 +50,6 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         }
     }
     private var currentFilter: String? = NSLocalizedString("all_trackers", comment: "")
-    let trackerStore = TrackerStore.shared
-//    private let trackerStore = TrackerStore()
-//    private let trackerCategoryStore = TrackerCategoryStore()
-    let trackerCategoryStore = TrackerCategoryStore.shared
-//    private let trackerRecordStore = TrackerRecordStore()
-    let trackerRecordStore = TrackerRecordStore.shared
     private let colors = Colors()
     private let analyticsService = AnalyticsService()
     
@@ -308,7 +305,6 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
         analyticsService.report(event: "click", params: ["screen": "Main", "item": "track"])
         if currentDate <= Date() {
             addTrackerRecord(trackerId: trackerId, date: currentDate)
-//            collectionView.reloadData()
             updateFilteringForCurrentFilterAndDate()
         }
     }
@@ -316,7 +312,6 @@ final class TrackerViewController: UIViewController, AddTrackerViewControllerDel
     func didTapUnCompleteButton(trackerId: UUID, at indexPath: IndexPath) {
         analyticsService.report(event: "click", params: ["screen": "Main", "item": "track"])
         self.removeTrackerRecord(trackerId: trackerId, date: self.currentDate)
-//        collectionView.reloadData()
         updateFilteringForCurrentFilterAndDate()
     }
     
